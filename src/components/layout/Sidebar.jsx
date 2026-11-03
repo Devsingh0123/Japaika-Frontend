@@ -97,16 +97,16 @@ export default function Sidebar({
               className="flex items-center gap-2.5 shrink-0 group"
               title="Japaika"
             >
-              <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/20 via-primary/20 to-primary/5 flex items-center justify-center shrink-0 shadow-xs group-hover:shadow-primary/20 transition-all overflow-hidden p-0.5">
-                <img
-                  src="/logo-192.jpg"
-                  alt="Japaika"
-                  className="w-full h-full object-cover rounded-lg aspect-square group-hover:scale-105 transition-transform"
-                />
-              </div>
-              <span className="font-bold text-[24px] tracking-tight text-foreground group-hover:text-primary transition-colors">
-                Japaika
-              </span>
+              <img
+                src="/japaikaLogo.svg"
+                alt=""
+                className="w-10 h-10 object-contain shrink-0 group-hover:scale-105 transition-transform"
+              />
+              <img
+                src="/japaikaName.svg"
+                alt="Japaika"
+                className="h-7 w-auto object-contain select-none"
+              />
             </Link>
 
             <Button

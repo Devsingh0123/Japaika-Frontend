@@ -81,16 +81,16 @@ export default function MobileHeader({
         </Button>
 
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="relative w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 via-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center shrink-0 overflow-hidden p-0.5 shadow-xs">
-            <img
-              src="/logo-192.jpg"
-              alt="Japaika"
-              className="w-full h-full object-cover rounded-md"
-            />
-          </div>
-          <span className="font-sans font-bold text-base tracking-tight text-foreground">
-            Japaika
-          </span>
+          <img
+            src="/japaikaLogo.svg"
+            alt=""
+            className="w-8 h-8 object-contain shrink-0"
+          />
+          <img
+            src="/japaikaName.svg"
+            alt="Japaika"
+            className="h-5.5 w-auto object-contain select-none"
+          />
         </Link>
 
         {isAuthenticated ? (
@@ -127,16 +127,16 @@ export default function MobileHeader({
             <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar pr-0.5">
               <div className="flex items-center justify-between pb-3 border-b border-border">
                 <div className="flex items-center gap-2.5">
-                  <div className="relative w-8.5 h-8.5 rounded-xl bg-gradient-to-br from-amber-500/20 via-primary/20 to-primary/5 border border-primary/30 flex items-center justify-center shrink-0 overflow-hidden p-0.5 shadow-xs">
-                    <img
-                      src="/logo-192.jpg"
-                      alt="Japaika"
-                      className="w-full h-full object-cover rounded-lg"
-                    />
-                  </div>
-                  <span className="font-sans font-bold text-lg tracking-tight text-foreground">
-                    Japaika
-                  </span>
+                  <img
+                    src="/japaikaLogo.svg"
+                    alt=""
+                    className="w-9 h-9 object-contain shrink-0"
+                  />
+                  <img
+                    src="/japaikaName.svg"
+                    alt="Japaika"
+                    className="h-6 w-auto object-contain select-none"
+                  />
                 </div>
                 <Button
                   variant="ghost"

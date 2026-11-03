@@ -392,9 +392,9 @@ export default function InvoicesPage() {
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4 border-b border-neutral-300 pb-6">
                 <div className="flex items-start gap-3.5">
                   <img
-                    src="/logo-192.jpg"
+                    src="/japaikaLogo.svg"
                     alt="Japaika"
-                    className="w-12 h-12 rounded-xl object-cover border border-neutral-200 shrink-0 shadow-xs"
+                    className="w-12 h-12 object-contain shrink-0"
                   />
                   <div>
                     <div className="flex items-center gap-2">

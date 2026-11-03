@@ -20,15 +20,17 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand & Socials Column - Full width on mobile, 1 col on md+ */}
           <div className="col-span-2 md:col-span-1 space-y-4">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="inline-flex items-center gap-2.5 group">
               <img
-                src="/logo-192.jpg"
-                alt="Japaika"
-                className="w-7 h-7 rounded-full object-cover shrink-0 border border-border shadow-xs"
+                src="/japaikaLogo.svg"
+                alt=""
+                className="w-9 h-9 object-contain shrink-0 group-hover:scale-105 transition-transform"
               />
-              <span className="font-serif font-bold text-lg text-foreground tracking-tight">
-                Japaika
-              </span>
+              <img
+                src="/japaikaName.svg"
+                alt="Japaika"
+                className="h-6 w-auto object-contain select-none"
+              />
             </Link>
 
             <p className="text-xs text-muted-foreground leading-relaxed">

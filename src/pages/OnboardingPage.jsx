@@ -219,17 +219,19 @@ export default function OnboardingPage() {
         <div className="hidden lg:flex lg:col-span-2 p-6 lg:p-8 bg-accent/40 dark:bg-accent/20 border-r border-border/80 flex-col justify-between relative overflow-hidden">
           <div className="space-y-6 relative z-10">
             {/* Brand Logo & Name */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3">
               <img
-                src="/logo-192.jpg"
-                alt="Japaika"
-                className="w-9 h-9 rounded-full object-cover shrink-0 border border-border/80 shadow-md"
+                src="/japaikaLogo.svg"
+                alt=""
+                className="w-10 h-10 object-contain shrink-0"
               />
               <div>
-                <span className="font-serif font-bold text-xl tracking-tight text-foreground block">
-                  Japaika
-                </span>
-                <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 uppercase tracking-widest block font-medium">
+                <img
+                  src="/japaikaName.svg"
+                  alt="Japaika"
+                  className="h-6 w-auto object-contain select-none block"
+                />
+                <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 uppercase tracking-widest block font-medium mt-1">
                   Vedic Astrology Engine
                 </span>
               </div>

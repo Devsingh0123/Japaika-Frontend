@@ -14,7 +14,7 @@
  * @param {string} [options.currency="INR"] - ISO currency code
  * @param {string} [options.name="Japaika"] - Merchant business name
  * @param {string} [options.description] - Product or pack description
- * @param {string} [options.image="/logo-192.jpg"] - Brand logo URL
+ * @param {string} [options.image="/japaikaLogo.svg"] - Brand logo URL
  * @param {Object} [options.user] - Prefill user info { name, email, phone }
  * @param {string} [options.themeColor="#9a4578"] - Hex color for checkout modal
  * @param {Function} options.onSuccess - Callback ({ razorpay_payment_id, razorpay_order_id, razorpay_signature }) => void
@@ -29,7 +29,7 @@ export const openRazorpayCheckout = ({
   currency = "INR",
   name = "Japaika",
   description = "Japaika Consultation",
-  image = "/logo-192.jpg",
+  image = "/japaikaLogo.svg",
   user = {},
   themeColor = "#9a4578",
   onSuccess,

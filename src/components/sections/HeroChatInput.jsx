@@ -92,11 +92,11 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
     }
   }, [queryParam])
 
-  // Automatically grow textarea to content height with compact ChatGPT starting height
+  // Automatically grow textarea to content height
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"
-      const nextHeight = Math.min(Math.max(textareaRef.current.scrollHeight, 56), 220)
+      const nextHeight = Math.min(Math.max(textareaRef.current.scrollHeight, 110), 260)
       textareaRef.current.style.height = `${nextHeight}px`
     }
   }, [query])
@@ -107,7 +107,7 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
     setQuery(cappedVal)
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"
-      const nextHeight = Math.min(Math.max(textareaRef.current.scrollHeight, 56), 220)
+      const nextHeight = Math.min(Math.max(textareaRef.current.scrollHeight, 110), 260)
       textareaRef.current.style.height = `${nextHeight}px`
     }
   }
@@ -255,16 +255,16 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
           {/* Textarea */}
           <textarea
             ref={textareaRef}
-            rows={1}
+            rows={3}
             value={query}
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             placeholder={inputPlaceholder}
-            className="w-full min-h-[56px] max-h-[220px] resize-none overflow-y-auto bg-transparent px-5 pt-4 pb-2 text-[15px] sm:text-[17px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed caret-primary disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full min-h-[110px] max-h-[260px] resize-none overflow-y-auto bg-transparent px-5 pt-5 pb-3 text-[15px] sm:text-[17px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed caret-primary disabled:cursor-not-allowed disabled:opacity-60"
           />
 
           {/* Bottom Action Controls */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-3 px-3 sm:px-3.5 pb-3 pt-1">
+          <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-3 px-3 sm:px-4 pb-3.5 pt-1.5">
             {/* Left: Engine Selector Segmented Pill */}
             <div
               role="radiogroup"

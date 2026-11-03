@@ -250,13 +250,15 @@ export default function AuthModal({ isOpen: propsIsOpen, onClose: propsOnClose }
               {/* Logo */}
               <div className="flex items-center gap-2.5">
                 <img
-                  src="/logo-192.jpg"
-                  alt="Japaika"
-                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-border shadow-xs"
+                  src="/japaikaLogo.svg"
+                  alt=""
+                  className="w-9 h-9 object-contain shrink-0"
                 />
-                <span className="font-serif font-bold text-xl tracking-tight text-foreground">
-                  Japaika
-                </span>
+                <img
+                  src="/japaikaName.svg"
+                  alt="Japaika"
+                  className="h-6 w-auto object-contain select-none"
+                />
               </div>
 
               {/* Title */}
