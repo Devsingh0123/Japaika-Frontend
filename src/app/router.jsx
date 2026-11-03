@@ -16,6 +16,7 @@ import BlogDetailPage from "@/pages/BlogDetailPage"
 import ProtectedRoute from "@/components/common/ProtectedRoute"
 import CompatibilityPage from "@/pages/CompatibilityPage"
 import CalculatorRunnerPage from "@/pages/CalculatorRunnerPage"
+import ContactPage from "@/pages/ContactPage"
 import FaqPage from "@/pages/FaqPage"
 import LegalPage from "@/pages/LegalPage"
 import NotFoundPage from "@/pages/NotFoundPage"
@@ -150,6 +151,14 @@ export const router = createBrowserRouter([
       {
         path: "compatibility",
         element: <CompatibilityPage />,
+      },
+      {
+        path: "contact",
+        element: <ContactPage />,
+      },
+      {
+        path: "contact-us",
+        element: <ContactPage />,
       },
       {
         path: "faq",
