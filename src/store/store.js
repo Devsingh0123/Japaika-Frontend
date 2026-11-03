@@ -6,6 +6,7 @@ import horoscopeReducer from "@/features/horoscope/horoscopeSlice";
 import reportsReducer from "@/features/reports/reportsSlice";
 import blogsReducer from "@/features/blogs/blogsSlice";
 import compatibilityReducer from "@/features/compatibility/compatibilitySlice";
+import supportReducer from "@/features/support/supportSlice";
 
 /**
  * Japaika Independent Global Redux Store Configuration
@@ -17,6 +18,7 @@ import compatibilityReducer from "@/features/compatibility/compatibilitySlice";
  * - @/features/reports/reportsSlice
  * - @/features/blogs/blogsSlice
  * - @/features/compatibility/compatibilitySlice
+ * - @/features/support/supportSlice
  */
 export const store = configureStore({
   reducer: {
@@ -28,6 +30,7 @@ export const store = configureStore({
     reports: reportsReducer,
     blogs: blogsReducer,
     compatibility: compatibilityReducer,
+    support: supportReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

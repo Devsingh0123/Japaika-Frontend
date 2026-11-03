@@ -16,6 +16,8 @@ import BlogDetailPage from "@/pages/BlogDetailPage"
 import ProtectedRoute from "@/components/common/ProtectedRoute"
 import CompatibilityPage from "@/pages/CompatibilityPage"
 import CalculatorRunnerPage from "@/pages/CalculatorRunnerPage"
+import FaqPage from "@/pages/FaqPage"
+import LegalPage from "@/pages/LegalPage"
 import NotFoundPage from "@/pages/NotFoundPage"
 
 function JyotishRedirect() {
@@ -148,6 +150,38 @@ export const router = createBrowserRouter([
       {
         path: "compatibility",
         element: <CompatibilityPage />,
+      },
+      {
+        path: "faq",
+        element: <FaqPage />,
+      },
+      {
+        path: "faqs",
+        element: <FaqPage />,
+      },
+      {
+        path: "privacy-policy",
+        element: <LegalPage defaultSlug="privacy-policy" />,
+      },
+      {
+        path: "terms-and-conditions",
+        element: <LegalPage defaultSlug="terms" />,
+      },
+      {
+        path: "terms",
+        element: <LegalPage defaultSlug="terms" />,
+      },
+      {
+        path: "refund-policy",
+        element: <LegalPage defaultSlug="refund-policy" />,
+      },
+      {
+        path: "disclaimer",
+        element: <LegalPage defaultSlug="disclaimer" />,
+      },
+      {
+        path: "legal/:slug",
+        element: <LegalPage />,
       },
       {
         path: "*",
