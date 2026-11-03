@@ -1,14 +1,38 @@
 import { Link } from "react-router-dom"
-import { QrCode, Sun, Moon } from "lucide-react"
+import { Sun, Moon } from "lucide-react"
 import { useTheme } from "@/hooks/useTheme"
 
 const SOCIAL_LINKS = [
-  { name: "LinkedIn", url: "https://www.linkedin.com" },
-  { name: "Facebook", url: "https://www.facebook.com" },
-  { name: "Instagram", url: "https://instagram.com" },
-  { name: "X", url: "https://twitter.com" },
-  { name: "YouTube", url: "https://youtube.com" },
-  { name: "Quora", url: "https://quora.com" },
+  {
+    name: "LinkedIn",
+    url: "https://www.linkedin.com",
+    logo: "/brandLogos/linkedin-badge.svg",
+    imgClass: "w-5 h-5 object-contain",
+  },
+  {
+    name: "Facebook",
+    url: "https://www.facebook.com",
+    logo: "/brandLogos/facebook.svg",
+    imgClass: "w-5 h-5 object-contain",
+  },
+  {
+    name: "Instagram",
+    url: "https://instagram.com",
+    logo: "/brandLogos/instagram.svg",
+    imgClass: "w-5 h-5 object-contain",
+  },
+  {
+    name: "X",
+    url: "https://x.com",
+    logo: "/brandLogos/x.svg",
+    imgClass: "w-4 h-4 object-contain dark:invert",
+  },
+  {
+    name: "WhatsApp",
+    url: "https://web.whatsapp.com/",
+    logo: "/brandLogos/whatsapp.svg",
+    imgClass: "w-4 h-4 object-contain ",
+  },
 ]
 
 export default function Footer() {
@@ -37,17 +61,23 @@ export default function Footer() {
               World’s Most Accurate Astrology Engine.
             </p>
 
-            {/* Social Links as touch-friendly badges */}
-            <div className="flex flex-wrap items-center gap-2 pt-1">
+            {/* Social Brand Logos */}
+            <div className="flex flex-wrap items-center gap-2.5 pt-1">
               {SOCIAL_LINKS.map((social) => (
                 <a
                   key={social.name}
                   href={social.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center px-2.5 py-1 rounded-lg bg-accent/40 hover:bg-accent border border-border/50 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-2xs"
+                  aria-label={social.name}
+                  title={social.name}
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-accent/40 hover:bg-accent border border-border/60 hover:border-primary/40 transition-all hover:scale-105 cursor-pointer shadow-2xs"
                 >
-                  {social.name}
+                  <img
+                    src={social.logo}
+                    alt={social.name}
+                    className={social.imgClass}
+                  />
                 </a>
               ))}
             </div>
@@ -111,42 +141,49 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* App Downloads & QR Code Column - Full width on mobile, 1 col on md+ */}
+          {/* App Downloads Column - Full width on mobile, 1 col on md+ */}
           <div className="col-span-2 md:col-span-1 space-y-3">
             <p className="text-xs font-semibold text-foreground font-mono tracking-wider uppercase">
               Mobile App
             </p>
-            <div className="flex items-center gap-3">
-              {/* QR Code only on tablet / desktop */}
-              <div className="hidden sm:flex w-16 h-16 rounded-2xl bg-card/80 border border-border/80 items-center justify-center text-primary shadow-xs shrink-0">
-                <QrCode className="w-10 h-10 text-primary" />
-              </div>
-
-              {/* Side-by-side on mobile, stacked on desktop */}
-              <div className="grid grid-cols-2 sm:grid-cols-1 gap-2.5 w-full sm:w-auto">
-                <a
-                  href="https://apps.apple.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block px-3.5 py-2 rounded-xl bg-card/80 hover:bg-card border border-border/80 hover:border-primary/40 text-[10px] text-foreground transition-all shadow-xs text-center sm:text-left"
-                >
-                  <span className="block text-[8px] text-muted-foreground uppercase tracking-wide">
-                    Download From
+            <div className="grid grid-cols-2 md:grid-cols-1 gap-2.5 w-full">
+              <a
+                href="https://apps.apple.com"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/80 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs group"
+              >
+                <img
+                  src="/brandLogos/apple.svg"
+                  alt="App Store"
+                  className="w-5 h-5 object-contain shrink-0 invert dark:invert-0 group-hover:scale-105 transition-transform"
+                />
+                <div className="text-left leading-tight">
+                  <span className="block text-[9px] text-muted-foreground uppercase tracking-wide">
+                    Download on the
                   </span>
                   <span className="font-semibold text-xs">App Store</span>
-                </a>
-                <a
-                  href="https://play.google.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block px-3.5 py-2 rounded-xl bg-card/80 hover:bg-card border border-border/80 hover:border-primary/40 text-[10px] text-foreground transition-all shadow-xs text-center sm:text-left"
-                >
-                  <span className="block text-[8px] text-muted-foreground uppercase tracking-wide">
-                    Download From
+                </div>
+              </a>
+
+              <a
+                href="https://play.google.com"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/80 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs group"
+              >
+                <img
+                  src="/brandLogos/google-play.svg"
+                  alt="Play Store"
+                  className="w-5 h-5 object-contain shrink-0 group-hover:scale-105 transition-transform"
+                />
+                <div className="text-left leading-tight">
+                  <span className="block text-[9px] text-muted-foreground uppercase tracking-wide">
+                    Get it on
                   </span>
                   <span className="font-semibold text-xs">Play Store</span>
-                </a>
-              </div>
+                </div>
+              </a>
             </div>
           </div>
         </div>
