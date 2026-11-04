@@ -74,7 +74,7 @@ export default function FreeKundliPage() {
         <title>Free Kundli Maker & Birth Chart Calculator | Japaika</title>
         <meta
           name="description"
-          content="A Kundli, or Janam Kundali, is a birth chart mapping the position of the planets, Sun and Moon across the twelve houses at your moment of birth. Japaika generates it free using Swiss Ephemeris data."
+          content="A Kundli, or Janam Kundali, is a birth chart mapping the position of the planets, Sun and Moon across the twelve houses at your moment of birth. Japaika generates it free."
         />
       </Helmet>
 
@@ -85,7 +85,7 @@ export default function FreeKundliPage() {
           updatedDate="21 JUL 2026"
           title="Free Kundli Maker"
           toolId="free-kundli-maker"
-          subtitle="A Kundli, or Janam Kundali, is a birth chart mapping the position of the planets, Sun and Moon across the twelve houses at your moment of birth. Japaika generates it free using Swiss Ephemeris data, giving you your ascendant, planetary placements, Vimshottari Dasha periods and active yogas in seconds."
+          subtitle="A Kundli, or Janam Kundali, is a birth chart mapping the position of the planets, Sun and Moon across the twelve houses at your moment of birth. Japaika generates it free, giving you your ascendant, planetary placements, Vimshottari Dasha periods and active yogas in seconds."
           reviewerName="Dr. Vineeta Chandrashekhar Phatak"
           reviewerTitle="CHIEF ASTROLOGER · JAPAIKA"
         />
@@ -131,13 +131,13 @@ export default function FreeKundliPage() {
             {isLoading && (
               <div className="space-y-4 p-6 rounded-2xl border border-border/70 glass-card bg-card/60">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <Skeleton className="h-16 w-full bg-muted/60 rounded-xl" />
-                  <Skeleton className="h-16 w-full bg-muted/60 rounded-xl" />
-                  <Skeleton className="h-16 w-full bg-muted/60 rounded-xl" />
-                  <Skeleton className="h-16 w-full bg-muted/60 rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
+                  <Skeleton className="h-16 w-full rounded-xl" />
                 </div>
                 <div className="flex justify-center py-6">
-                  <Skeleton className="h-[360px] w-full max-w-[400px] bg-muted/60 rounded-2xl" />
+                  <Skeleton className="h-[360px] w-full max-w-[400px] rounded-2xl" />
                 </div>
               </div>
             )}

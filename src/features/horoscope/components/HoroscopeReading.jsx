@@ -36,7 +36,7 @@ export default function HoroscopeReading({ forecast, timeframe = "daily" }) {
             Japaika Vedic Astronomy Engine
           </h3>
           <p className="text-[10px] font-mono tracking-wider text-muted-foreground uppercase">
-            NIRAYANA LAHIRI AYANAMSHA · SWISS EPHEMERIS
+            NIRAYANA LAHIRI AYANAMSHA
           </p>
         </div>
       </div>

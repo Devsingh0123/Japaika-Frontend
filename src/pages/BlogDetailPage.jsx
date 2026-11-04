@@ -280,14 +280,14 @@ export default function BlogDetailPage() {
     return (
       <div className="min-h-full flex flex-col justify-between bg-transparent text-foreground">
         <div className="max-w-4xl w-full mx-auto px-4 sm:px-6 py-10 space-y-6">
-          <Skeleton className="h-4 w-40 bg-muted/60" />
-          <Skeleton className="h-12 w-full bg-muted/60" />
-          <Skeleton className="h-6 w-3/4 bg-muted/60" />
-          <Skeleton className="aspect-[16/9] w-full rounded-2xl bg-muted/60" />
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="aspect-[16/9] w-full rounded-2xl" />
           <div className="space-y-4 pt-4">
-            <Skeleton className="h-4 w-full bg-muted/60" />
-            <Skeleton className="h-4 w-full bg-muted/60" />
-            <Skeleton className="h-4 w-5/6 bg-muted/60" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
           </div>
         </div>
         <Footer />

@@ -44,7 +44,7 @@ export const FALLBACK_FAQS = [
     id: "faq-general-1",
     question: "How accurate are Japaika's Vedic astrology calculations?",
     answer:
-      "All birth charts (Kundli), planetary longitudes, and divisional charts (Vargas) on Japaika are computed using high-precision Swiss Ephemeris astronomical algorithms paired with the authentic Lahiri (Chitrapaksha) Ayanamsa for sub-arcsecond accuracy.",
+      "All birth charts (Kundli), planetary longitudes, and divisional charts (Vargas) on Japaika are computed using high-precision astronomical algorithms paired with the authentic Lahiri (Chitrapaksha) Ayanamsa for sub-arcsecond accuracy.",
     category: "general",
     sort_order: 1,
     is_active: true,

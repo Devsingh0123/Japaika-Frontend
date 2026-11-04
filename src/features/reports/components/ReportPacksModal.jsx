@@ -513,23 +513,23 @@ export default function ReportPacksModal({
                       >
                         <div>
                           <div className="flex items-center justify-between">
-                            <Skeleton className="h-4 w-16 bg-accent" />
-                            <Skeleton className="h-5 w-5 rounded-full bg-accent" />
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-5 w-5 rounded-full" />
                           </div>
                           <div className="mt-5 space-y-2">
-                            <Skeleton className="h-12 w-20 bg-accent" />
-                            <Skeleton className="h-4 w-28 bg-accent/60" />
+                            <Skeleton className="h-12 w-20" />
+                            <Skeleton className="h-4 w-28" />
                           </div>
                           <div className="mt-6 space-y-2">
-                            <Skeleton className="h-3 w-36 bg-accent/60" />
-                            <Skeleton className="h-3 w-40 bg-accent/60" />
-                            <Skeleton className="h-3 w-32 bg-accent/60" />
+                            <Skeleton className="h-3 w-36" />
+                            <Skeleton className="h-3 w-40" />
+                            <Skeleton className="h-3 w-32" />
                           </div>
                         </div>
                         <div>
                           <div className="border-t border-border/80 my-4" />
-                          <Skeleton className="h-8 w-32 bg-accent" />
-                          <Skeleton className="h-4 w-24 bg-accent/60 mt-2" />
+                          <Skeleton className="h-8 w-32" />
+                          <Skeleton className="h-4 w-24 mt-2" />
                         </div>
                       </div>
                     ))}

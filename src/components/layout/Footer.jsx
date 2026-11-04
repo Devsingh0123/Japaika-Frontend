@@ -52,7 +52,7 @@ export default function Footer() {
       {/* Subtle top-only gradient so the artwork remains clear and vivid */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background/70 via-background/20 to-transparent dark:from-background/80 dark:via-background/35 dark:to-background/10"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background/70 via-background/20 to-transparent dark:from-background/50 dark:via-background/20 dark:to-background/10"
       />
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 lg:pt-14 pb-6 sm:pb-8 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] flex flex-col justify-between">

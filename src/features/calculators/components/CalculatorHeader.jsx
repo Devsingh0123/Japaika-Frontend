@@ -8,7 +8,7 @@ export default function CalculatorHeader({
   updatedDate = "21 JUL 2026",
   title = "Free Kundli Maker",
   toolId = "free-kundli-maker",
-  subtitle = "A Kundli, or Janam Kundali, is a birth chart mapping the position of the planets, Sun and Moon across the twelve houses at your moment of birth. Japaika generates it free using Swiss Ephemeris data, giving you your ascendant, planetary placements, Vimshottari Dasha periods and active yogas in seconds.",
+  subtitle = "A Kundli, or Janam Kundali, is a birth chart mapping the position of the planets, Sun and Moon across the twelve houses at your moment of birth. Japaika generates it free using astronomical algorithms, giving you your ascendant, planetary placements, Vimshottari Dasha periods and active yogas in seconds.",
   reviewerName = "Dr. Vineeta Chandrashekhar Phatak",
   reviewerTitle = "CHIEF ASTROLOGER · JAPAIKA",
   backUrl = "/calculators",

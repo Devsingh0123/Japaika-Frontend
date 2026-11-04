@@ -252,16 +252,32 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
               : "border-border/80 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15"
           }`}
         >
-          {/* Textarea */}
-          <textarea
-            ref={textareaRef}
-            rows={3}
-            value={query}
-            onChange={handleTextareaChange}
-            onKeyDown={handleKeyDown}
-            placeholder={inputPlaceholder}
-            className="w-full min-h-[110px] max-h-[260px] resize-none overflow-y-auto bg-transparent px-5 pt-5 pb-3 text-[15px] sm:text-[17px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed caret-primary disabled:cursor-not-allowed disabled:opacity-60"
-          />
+          {/* Top input row with pulsing engine icon */}
+          <div className="relative flex gap-3 px-4 pt-5 sm:px-5 sm:pt-5">
+            <span
+              aria-hidden="true"
+              className={`shrink-0 pt-1 text-[16px] leading-none select-none ${
+                engine === "shastra"
+                  ? "text-amber-500 animate-pulse"
+                  : "text-primary animate-pulse"
+              }`}
+            >
+              {engine === "shastra" ? (
+                <BookOpen className="size-5 shrink-0 stroke-[2]" />
+              ) : (
+                <SunMedium className="size-5 shrink-0 stroke-[2]" />
+              )}
+            </span>
+            <textarea
+              ref={textareaRef}
+              rows={3}
+              value={query}
+              onChange={handleTextareaChange}
+              onKeyDown={handleKeyDown}
+              placeholder={inputPlaceholder}
+              className="w-full min-h-[110px] max-h-[260px] min-w-0 flex-1 resize-none overflow-y-auto bg-transparent pb-3 text-[15px] sm:text-[17px] text-foreground placeholder:text-muted-foreground/60 outline-none leading-relaxed caret-primary disabled:cursor-not-allowed disabled:opacity-60"
+            />
+          </div>
 
           {/* Bottom Action Controls */}
           <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-3 px-3 sm:px-4 pb-3.5 pt-1.5">
@@ -370,7 +386,7 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
 
         {/* ChatGPT-style Subtitle hint */}
         <p className="mt-2.5 text-center text-[11px] sm:text-[11.5px] text-muted-foreground/60 font-sans">
-          Japaika can make mistakes. Verify important astrological insights.
+          Enter to send · Shift + Enter for a new line (Max 250 words)
         </p>
       </motion.div>
 

@@ -254,7 +254,7 @@ export default function OnboardingPage() {
           <div className="pt-6 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Swiss Ephemeris 2.10
+             www.japaika.com
             </span>
             <span className="text-amber-600 dark:text-amber-400 font-medium">
               Lahiri Ayanamsa

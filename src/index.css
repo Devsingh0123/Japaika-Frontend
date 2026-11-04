@@ -33,6 +33,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-skeleton: var(--skeleton);
 
   /* Japaika Cosmic Navy Surfaces */
   --color-mlh-bg: var(--mlh-bg);
@@ -134,6 +135,7 @@
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #2563eb;
+  --skeleton: #cbd5e1;
   --radius: 0.75rem;
 
   /* Surfaces & Accents */
@@ -215,6 +217,7 @@
   --border: #2d3748;
   --input: #2d3748;
   --ring: #2563eb;
+  --skeleton: #252b3b;
 
   /* Surfaces & Accents */
   --mlh-bg: #1f2937;
@@ -259,6 +262,10 @@
   h1, h2, h3, h4 {
     @apply font-heading tracking-tight;
   }
+}
+
+[data-slot="skeleton"] {
+  background-color: var(--skeleton);
 }
 
 /* Jagannatha Hora Ambient Aura Background */

@@ -649,18 +649,18 @@ export default function QuestionPacksModal({
                       >
                         <div>
                           <div className="flex items-center justify-between">
-                            <Skeleton className="h-4 w-16 bg-accent" />
-                            <Skeleton className="h-5 w-5 rounded-full bg-accent" />
+                            <Skeleton className="h-4 w-16" />
+                            <Skeleton className="h-5 w-5 rounded-full" />
                           </div>
                           <div className="mt-5 space-y-2">
-                            <Skeleton className="h-14 w-20 bg-accent" />
-                            <Skeleton className="h-4 w-24 bg-accent/60" />
+                            <Skeleton className="h-14 w-20" />
+                            <Skeleton className="h-4 w-24" />
                           </div>
                         </div>
                         <div>
                           <div className="border-t border-border/60 my-5" />
-                          <Skeleton className="h-8 w-32 bg-accent" />
-                          <Skeleton className="h-4 w-24 bg-accent/60 mt-2" />
+                          <Skeleton className="h-8 w-32" />
+                          <Skeleton className="h-4 w-24 mt-2" />
                         </div>
                       </div>
                     ))}

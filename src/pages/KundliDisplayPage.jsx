@@ -273,9 +273,7 @@ export default function KundliDisplayPage() {
                 <span className="px-2.5 py-1 rounded-lg bg-accent/40 border border-border/60 text-[11px] font-mono text-foreground/90">
                   Ayanamsha: <strong className="text-primary font-semibold">Lahiri (Chitra Paksha)</strong>
                 </span>
-                <span className="px-2.5 py-1 rounded-lg bg-accent/40 border border-border/60 text-[11px] font-mono text-foreground/90">
-                  Engine: <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">Swiss Ephemeris</strong>
-                </span>
+                
               </div>
 
               <div className="text-[11px] font-mono text-muted-foreground flex items-center gap-1.5">
@@ -398,15 +396,15 @@ export default function KundliDisplayPage() {
             <div className="flex items-center gap-3">
               <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               <div className="space-y-1">
-                <Skeleton className="h-5 w-48 bg-muted rounded-md" />
+                <Skeleton className="h-5 w-48 rounded-md" />
                 <p className="text-xs text-muted-foreground font-mono">
-                  Calculating planetary positions via Swiss Ephemeris...
+                  Calculating planetary positions...
                 </p>
               </div>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center justify-center">
-              <Skeleton className="h-[420px] w-full max-w-[460px] mx-auto rounded-3xl bg-muted" />
-              <Skeleton className="h-[420px] w-full rounded-2xl bg-muted" />
+              <Skeleton className="h-[420px] w-full max-w-[460px] mx-auto rounded-3xl" />
+              <Skeleton className="h-[420px] w-full rounded-2xl" />
             </div>
           </div>
         )}

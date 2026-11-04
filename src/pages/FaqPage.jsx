@@ -232,7 +232,7 @@ export default function FaqPage() {
             </h1>
 
             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-              Everything you need to know about our Swiss Ephemeris Kundli
+              Everything you need to know about our Kundli
               calculations, Jyotish &amp; Shastra AI modes, personalized life
               reports, and credit protection.
             </p>

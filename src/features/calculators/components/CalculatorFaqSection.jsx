@@ -7,7 +7,7 @@ const HOW_IT_WORKS_STEPS = [
   },
   {
     step: "02",
-    desc: "Japaika computes planetary degrees using Swiss Ephemeris and sets your ascendant.",
+    desc: "Japaika computes planetary degrees using astronomical algorithms and sets your ascendant.",
   },
   {
     step: "03",
@@ -22,7 +22,7 @@ const DEFAULT_FAQS = [
   },
   {
     q: "How accurate is this Kundli calculator?",
-    a: "It uses Swiss Ephemeris planetary data, the same source professional astrologers rely on, so planetary degrees, ascendant and Dasha periods are calculated to professional-grade precision.",
+    a: "It uses astronomical algorithms planetary data, the same source professional astrologers rely on, so planetary degrees, ascendant and Dasha periods are calculated to professional-grade precision.",
   },
   {
     q: "What if I don't know my exact birth time?",

@@ -93,7 +93,7 @@ export default function HoroscopeDetailPage() {
         </title>
         <meta
           name="description"
-          content={`Read authentic Vedic ${periodTitle.toLowerCase()} horoscope for ${signTitle} (${vedicTitle} Rashi). Planetary longitudes, Gochara transits, lucky metrics, and auspicious timings computed by Swiss Ephemeris.`}
+          content={`Read authentic Vedic ${periodTitle.toLowerCase()} horoscope for ${signTitle} (${vedicTitle} Rashi). Planetary longitudes, Gochara transits, lucky metrics, and auspicious timings.`}
         />
       </Helmet>
 
@@ -112,20 +112,20 @@ export default function HoroscopeDetailPage() {
         {loading && !forecast && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
             <div className="lg:col-span-8 space-y-6">
-              <Skeleton className="h-44 w-full rounded-3xl bg-accent/40" />
+              <Skeleton className="h-44 w-full rounded-3xl" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Skeleton className="h-24 rounded-2xl bg-accent/40" />
-                <Skeleton className="h-24 rounded-2xl bg-accent/40" />
-                <Skeleton className="h-24 rounded-2xl bg-accent/40" />
+                <Skeleton className="h-24 rounded-2xl" />
+                <Skeleton className="h-24 rounded-2xl" />
+                <Skeleton className="h-24 rounded-2xl" />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Skeleton className="h-40 rounded-2xl bg-accent/40" />
-                <Skeleton className="h-40 rounded-2xl bg-accent/40" />
+                <Skeleton className="h-40 rounded-2xl" />
+                <Skeleton className="h-40 rounded-2xl" />
               </div>
             </div>
             <div className="lg:col-span-4 space-y-4">
-              <Skeleton className="h-64 rounded-2xl bg-accent/40" />
-              <Skeleton className="h-48 rounded-2xl bg-accent/40" />
+              <Skeleton className="h-64 rounded-2xl" />
+              <Skeleton className="h-48 rounded-2xl" />
             </div>
           </div>
         )}

@@ -136,7 +136,7 @@ export default function HoroscopesListingPage() {
             </div>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               <span className="font-semibold text-foreground">Japaika reads by your Rashi</span>, where the
-              Moon sat at your birth, calculated via Swiss Ephemeris Nirayana planetary coordinates.
+              Moon sat at your birth.
             </p>
           </div>
           <Button

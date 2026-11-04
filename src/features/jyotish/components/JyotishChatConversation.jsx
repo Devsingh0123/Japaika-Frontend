@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { Sparkles, BookOpen, ArrowUp, ChevronDown, ThumbsUp, ThumbsDown, Plus } from "lucide-react"
+import { Sparkles, BookOpen, ArrowUp, ChevronDown, ThumbsUp, ThumbsDown, Plus, SunMedium } from "lucide-react"
 import {
   addConversation,
   clearActiveConversation,
@@ -94,25 +94,25 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
     typeof questionQuota === "number"
       ? questionQuota
       : typeof user?.creditBalance === "number"
-      ? user.creditBalance
-      : typeof user?.credit_balance === "number"
-      ? user.credit_balance
-      : 0
+        ? user.creditBalance
+        : typeof user?.credit_balance === "number"
+          ? user.credit_balance
+          : 0
 
   // 1. Identify the current active thread ID
   const currentThreadId =
     activeThreadId ||
     (activeConversationId
       ? conversations.find(
-          (c) => c.id === activeConversationId || c.threadId === activeConversationId
-        )?.threadId || activeConversationId
+        (c) => c.id === activeConversationId || c.threadId === activeConversationId
+      )?.threadId || activeConversationId
       : null)
 
   // 2. Filter readings that belong to this thread or active conversation
   const threadReadings = currentThreadId
     ? conversations.filter(
-        (c) => c.threadId === currentThreadId || c.id === currentThreadId
-      )
+      (c) => c.threadId === currentThreadId || c.id === currentThreadId
+    )
     : conversations.filter((c) => c.id === activeConversationId)
 
   // 3. Sort chronologically (oldest first) so user reads downwards naturally
@@ -330,11 +330,10 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                       You
                     </span>
                     <div
-                      className={`rounded-[20px_20px_4px_20px] border px-5 py-3.5 font-sans text-[15.5px] sm:text-[17px] leading-[1.4] text-pretty shadow-md backdrop-blur-xl ${
-                        readingIsJyotish
-                          ? "border-primary/30 bg-primary/10 text-foreground"
-                          : "border-amber-500/30 bg-amber-500/10 text-foreground"
-                      }`}
+                      className={`rounded-[20px_20px_4px_20px] border px-5 py-3.5 font-sans text-[15.5px] sm:text-[17px] leading-[1.4] text-pretty shadow-md backdrop-blur-xl ${readingIsJyotish
+                        ? "border-primary/30 bg-primary/10 text-foreground"
+                        : "border-amber-500/30 bg-amber-500/10 text-foreground"
+                        }`}
                     >
                       {reading.question}
                     </div>
@@ -343,31 +342,28 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
 
                 {/* Engine Reading Bubble (Glass Card) */}
                 <div
-                  className={`animate-in fade-in slide-in-from-bottom-3 duration-400 w-full rounded-3xl glass-card border p-5 sm:p-7 shadow-xl backdrop-blur-2xl transition-all ${
-                    readingIsJyotish ? "border-primary/25" : "border-amber-500/25"
-                  }`}
+                  className={`animate-in fade-in slide-in-from-bottom-3 duration-400 w-full rounded-3xl glass-card border p-5 sm:p-7 shadow-xl backdrop-blur-2xl transition-all ${readingIsJyotish ? "border-primary/25" : "border-amber-500/25"
+                    }`}
                 >
                   {/* Engine Header */}
                   <div className="mb-4 flex items-center justify-between gap-3 border-b border-border/50 pb-3.5">
                     <div className="flex items-center gap-2.5">
                       <span
                         aria-hidden="true"
-                        className={`relative grid h-7 w-7 flex-none place-items-center rounded-xl border shadow-xs ${
-                          readingIsJyotish
-                            ? "border-primary/40 bg-primary/10 text-primary"
-                            : "border-amber-500/40 bg-amber-500/10 text-amber-500"
-                        }`}
+                        className={`relative grid h-7 w-7 flex-none place-items-center rounded-xl border shadow-xs ${readingIsJyotish
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                          }`}
                       >
                         {readingIsJyotish ? (
-                          <Sparkles className="w-3.5 h-3.5" />
+                          <SunMedium className="w-3.5 h-3.5" />
                         ) : (
                           <BookOpen className="w-3.5 h-3.5" />
                         )}
                       </span>
                       <span
-                        className={`font-mono text-[9.5px] tracking-[0.2em] uppercase sm:text-[10px] font-semibold ${
-                          readingIsJyotish ? "text-primary" : "text-amber-500"
-                        }`}
+                        className={`font-mono text-[9.5px] tracking-[0.2em] uppercase sm:text-[10px] font-semibold ${readingIsJyotish ? "text-primary" : "text-amber-500"
+                          }`}
                       >
                         {readingIsJyotish
                           ? "Jyotish · reading from your birth chart"
@@ -387,11 +383,10 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                         {reading.thinkingSteps.map((toolBadge, tbIdx) => (
                           <span
                             key={tbIdx}
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] tracking-wide shadow-xs ${
-                              readingIsJyotish
-                                ? "border-primary/25 bg-card/80 text-foreground/85"
-                                : "border-amber-500/25 bg-card/80 text-foreground/85"
-                            }`}
+                            className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] tracking-wide shadow-xs ${readingIsJyotish
+                              ? "border-primary/25 bg-card/80 text-foreground/85"
+                              : "border-amber-500/25 bg-card/80 text-foreground/85"
+                              }`}
                           >
                             <span className="text-emerald-500 text-[9px]">✦</span>
                             <span>{toolBadge}</span>
@@ -468,17 +463,15 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                             type="button"
                             aria-expanded={isExpanded}
                             onClick={() => toggleExpandedAstrology(reading.id || rIdx)}
-                            className={`flex cursor-pointer items-center gap-2.5 rounded-full border px-4 py-2 font-sans text-[14px] sm:text-[15px] font-medium transition-all shadow-xs ${
-                              readingIsJyotish
-                                ? "border-primary/25 bg-accent/40 text-foreground hover:bg-accent hover:border-primary/50"
-                                : "border-amber-500/25 bg-accent/40 text-foreground hover:bg-accent hover:border-amber-500/50"
-                            }`}
+                            className={`flex cursor-pointer items-center gap-2.5 rounded-full border px-4 py-2 font-sans text-[14px] sm:text-[15px] font-medium transition-all shadow-xs ${readingIsJyotish
+                              ? "border-primary/25 bg-accent/40 text-foreground hover:bg-accent hover:border-primary/50"
+                              : "border-amber-500/25 bg-accent/40 text-foreground hover:bg-accent hover:border-amber-500/50"
+                              }`}
                           >
                             <span
                               aria-hidden="true"
-                              className={`text-[12px] leading-none ${
-                                readingIsJyotish ? "text-primary" : "text-amber-500"
-                              }`}
+                              className={`text-[12px] leading-none ${readingIsJyotish ? "text-primary" : "text-amber-500"
+                                }`}
                             >
                               ✦
                             </span>
@@ -486,9 +479,8 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                               {readingIsJyotish ? "The astrology behind this" : "Classical references & citations"}
                             </span>
                             <ChevronDown
-                              className={`w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground ${
-                                isExpanded ? "rotate-180" : ""
-                              }`}
+                              className={`w-3.5 h-3.5 transition-transform duration-200 text-muted-foreground ${isExpanded ? "rotate-180" : ""
+                                }`}
                             />
                           </button>
                         </div>
@@ -498,9 +490,8 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                             className="mt-3.5 overflow-hidden rounded-2xl border border-border/80 bg-accent/30 p-4 sm:p-5 backdrop-blur-md animate-in fade-in duration-200"
                           >
                             <div
-                              className={`font-mono text-[9.5px] tracking-[0.22em] uppercase font-semibold ${
-                                readingIsJyotish ? "text-primary" : "text-amber-500"
-                              }`}
+                              className={`font-mono text-[9.5px] tracking-[0.22em] uppercase font-semibold ${readingIsJyotish ? "text-primary" : "text-amber-500"
+                                }`}
                             >
                               {readingIsJyotish ? "What I read from your chart" : "Citations & Classical Treatises"}
                             </div>
@@ -539,11 +530,10 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                           type="button"
                           aria-label="Yes"
                           onClick={() => handleFeedback(reading.id, "yes")}
-                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border transition-all ${
-                            reading.feedback === "yes"
-                              ? "border-emerald-500 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-                              : "border-border/80 bg-accent/40 text-muted-foreground hover:text-foreground hover:bg-accent"
-                          }`}
+                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border transition-all ${reading.feedback === "yes"
+                            ? "border-emerald-500 bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                            : "border-border/80 bg-accent/40 text-muted-foreground hover:text-foreground hover:bg-accent"
+                            }`}
                         >
                           <ThumbsUp className="w-3.5 h-3.5" />
                         </button>
@@ -551,11 +541,10 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                           type="button"
                           aria-label="No"
                           onClick={() => handleFeedback(reading.id, "no")}
-                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border transition-all ${
-                            reading.feedback === "no"
-                              ? "border-rose-500 bg-rose-500/20 text-rose-600 dark:text-rose-400"
-                              : "border-border/80 bg-accent/40 text-muted-foreground hover:text-foreground hover:bg-accent"
-                          }`}
+                          className={`grid h-7 w-7 cursor-pointer place-items-center rounded-lg border transition-all ${reading.feedback === "no"
+                            ? "border-rose-500 bg-rose-500/20 text-rose-600 dark:text-rose-400"
+                            : "border-border/80 bg-accent/40 text-muted-foreground hover:text-foreground hover:bg-accent"
+                            }`}
                         >
                           <ThumbsDown className="w-3.5 h-3.5" />
                         </button>
@@ -569,9 +558,8 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                       >
                         <div className="flex items-center justify-between">
                           <div
-                            className={`font-mono text-[9.5px] tracking-[0.22em] uppercase font-semibold ${
-                              readingIsJyotish ? "text-primary" : "text-amber-500"
-                            }`}
+                            className={`font-mono text-[9.5px] tracking-[0.22em] uppercase font-semibold ${readingIsJyotish ? "text-primary" : "text-amber-500"
+                              }`}
                           >
                             {readingIsJyotish ? "Suggested Follow-ups & Questions" : "Keep exploring"}
                           </div>
@@ -585,11 +573,10 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                               key={qIdx}
                               type="button"
                               onClick={() => handleSendFollowUp(q)}
-                              className={`group flex cursor-pointer items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-left font-sans text-[14px] sm:text-[15px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${
-                                readingIsJyotish
-                                  ? "border-border/80 bg-accent/40 hover:bg-accent hover:border-primary/50 text-foreground/85 hover:text-foreground"
-                                  : "border-border/80 bg-accent/40 hover:bg-accent hover:border-amber-500/50 text-foreground/85 hover:text-foreground"
-                              }`}
+                              className={`group flex cursor-pointer items-center gap-2.5 rounded-2xl border px-4 py-2.5 text-left font-sans text-[14px] sm:text-[15px] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${readingIsJyotish
+                                ? "border-border/80 bg-accent/40 hover:bg-accent hover:border-primary/50 text-foreground/85 hover:text-foreground"
+                                : "border-border/80 bg-accent/40 hover:bg-accent hover:border-amber-500/50 text-foreground/85 hover:text-foreground"
+                                }`}
                             >
                               <span className="flex-1 line-clamp-2">{q}</span>
                               <span
@@ -618,11 +605,10 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                     You
                   </span>
                   <div
-                    className={`rounded-[20px_20px_4px_20px] border px-5 py-3.5 font-sans text-[15.5px] sm:text-[17px] leading-[1.4] text-pretty shadow-md backdrop-blur-xl ${
-                      isJyotish
-                        ? "border-primary/30 bg-primary/10 text-foreground"
-                        : "border-amber-500/30 bg-amber-500/10 text-foreground"
-                    }`}
+                    className={`rounded-[20px_20px_4px_20px] border px-5 py-3.5 font-sans text-[15.5px] sm:text-[17px] leading-[1.4] text-pretty shadow-md backdrop-blur-xl ${isJyotish
+                      ? "border-primary/30 bg-primary/10 text-foreground"
+                      : "border-amber-500/30 bg-amber-500/10 text-foreground"
+                      }`}
                   >
                     {inFlightQuery || pendingQuestion}
                   </div>
@@ -630,29 +616,26 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
               )}
 
               <div
-                className={`animate-in fade-in slide-in-from-bottom-3 duration-400 w-full rounded-3xl glass-card border p-5 sm:p-7 shadow-xl backdrop-blur-2xl ${
-                  isJyotish ? "border-primary/25" : "border-amber-500/25"
-                }`}
+                className={`animate-in fade-in slide-in-from-bottom-3 duration-400 w-full rounded-3xl glass-card border p-5 sm:p-7 shadow-xl backdrop-blur-2xl ${isJyotish ? "border-primary/25" : "border-amber-500/25"
+                  }`}
               >
                 <div className="mb-4 flex items-center gap-2.5 border-b border-border/50 pb-3.5">
                   <span
                     aria-hidden="true"
-                    className={`relative grid h-7 w-7 flex-none place-items-center rounded-xl border shadow-xs ${
-                      isJyotish
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-amber-500/40 bg-amber-500/10 text-amber-500"
-                    }`}
+                    className={`relative grid h-7 w-7 flex-none place-items-center rounded-xl border shadow-xs ${isJyotish
+                      ? "border-primary/40 bg-primary/10 text-primary"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-500"
+                      }`}
                   >
                     {isJyotish ? (
-                      <Sparkles className="w-3.5 h-3.5" />
+                      <SunMedium className="w-3.5 h-3.5" />
                     ) : (
                       <BookOpen className="w-3.5 h-3.5" />
                     )}
                   </span>
                   <span
-                    className={`font-mono text-[9.5px] tracking-[0.2em] uppercase sm:text-[10px] font-semibold ${
-                      isJyotish ? "text-primary" : "text-amber-500"
-                    }`}
+                    className={`font-mono text-[9.5px] tracking-[0.2em] uppercase sm:text-[10px] font-semibold ${isJyotish ? "text-primary" : "text-amber-500"
+                      }`}
                   >
                     {isJyotish
                       ? "Jyotish · reading from your birth chart"
@@ -668,13 +651,12 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                         return (
                           <div
                             key={sIdx}
-                            className={`flex items-center gap-2.5 rounded-full px-4 py-2 font-mono text-xs sm:text-[12.5px] tracking-wide transition-all shadow-xs ${
-                              isLatest
-                                ? isJyotish
-                                  ? "border border-primary/50 bg-primary/15 text-primary animate-pulse"
-                                  : "border border-amber-500/50 bg-amber-500/15 text-amber-600 dark:text-amber-400 animate-pulse"
-                                : "border border-border/60 bg-accent/40 text-muted-foreground"
-                            }`}
+                            className={`flex items-center gap-2.5 rounded-full px-4 py-2 font-mono text-xs sm:text-[12.5px] tracking-wide transition-all shadow-xs ${isLatest
+                              ? isJyotish
+                                ? "border border-primary/50 bg-primary/15 text-primary animate-pulse"
+                                : "border border-amber-500/50 bg-amber-500/15 text-amber-600 dark:text-amber-400 animate-pulse"
+                              : "border border-border/60 bg-accent/40 text-muted-foreground"
+                              }`}
                           >
                             {isLatest ? (
                               <Sparkles className="w-3.5 h-3.5 animate-spin text-amber-500 shrink-0" />
@@ -687,9 +669,8 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                       })
                     ) : (
                       <div
-                        className={`flex items-center gap-2.5 font-mono text-xs sm:text-[13px] tracking-wide animate-pulse ${
-                          isJyotish ? "text-primary" : "text-amber-600 dark:text-amber-400"
-                        }`}
+                        className={`flex items-center gap-2.5 font-mono text-xs sm:text-[13px] tracking-wide animate-pulse ${isJyotish ? "text-primary" : "text-amber-600 dark:text-amber-400"
+                          }`}
                       >
                         <Sparkles className="w-4 h-4 animate-spin text-amber-500 shrink-0" />
                         <span>
@@ -711,20 +692,22 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
         <div className="w-full max-w-[860px] flex-none pt-3 pb-4 sm:pb-5">
           <div>
             <div
-              className={`relative overflow-hidden rounded-3xl border glass-card transition-all duration-300 shadow-xl backdrop-blur-2xl ${
-                isJyotish
-                  ? "border-border/80 focus-within:border-primary/60 focus-within:shadow-2xl focus-within:shadow-primary/10"
-                  : "border-border/80 focus-within:border-amber-500/60 focus-within:shadow-2xl focus-within:shadow-amber-500/10"
-              }`}
+              className={`relative overflow-hidden rounded-3xl border glass-card transition-all duration-300 shadow-xl backdrop-blur-2xl ${isJyotish
+                ? "border-border/80 focus-within:border-primary/60 focus-within:shadow-2xl focus-within:shadow-primary/10"
+                : "border-border/80 focus-within:border-amber-500/60 focus-within:shadow-2xl focus-within:shadow-amber-500/10"
+                }`}
             >
               <div className="relative flex gap-3 px-4 pt-4 sm:px-5 sm:pt-4">
                 <span
                   aria-hidden="true"
-                  className={`shrink-0 pt-1 text-[16px] leading-none ${
-                    isJyotish ? "text-primary animate-pulse" : "text-amber-500 animate-pulse"
-                  }`}
+                  className={`shrink-0 pt-1 text-[16px] leading-none ${isJyotish ? "text-primary animate-pulse" : "text-amber-500 animate-pulse"
+                    }`}
                 >
-                  ✦
+                  {isJyotish ? (
+                    <SunMedium className="size-5 shrink-0 stroke-[2]" />
+                  ) : (
+                    <BookOpen className="size-5 shrink-0 stroke-[2]" />
+                  )}
                 </span>
                 <textarea
                   rows={2}
@@ -766,11 +749,10 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                     disabled={!followUpQuery.trim() || isGenerating}
                     onClick={() => handleSendFollowUp()}
                     aria-label="Send question"
-                    className={`grid h-10 w-10 flex-none place-items-center rounded-full transition-all duration-200 cursor-pointer disabled:opacity-40 shadow-md ${
-                      isJyotish
-                        ? "text-primary-foreground bg-primary hover:bg-primary/90 hover:scale-105 shadow-primary/25"
-                        : "text-white bg-amber-500 hover:bg-amber-600 hover:scale-105 shadow-amber-500/25"
-                    }`}
+                    className={`grid h-10 w-10 flex-none place-items-center rounded-full transition-all duration-200 cursor-pointer disabled:opacity-40 shadow-md ${isJyotish
+                      ? "text-primary-foreground bg-primary hover:bg-primary/90 hover:scale-105 shadow-primary/25"
+                      : "text-white bg-amber-500 hover:bg-amber-600 hover:scale-105 shadow-amber-500/25"
+                      }`}
                   >
                     <ArrowUp className="w-4 h-4 stroke-[2.5]" />
                   </button>
