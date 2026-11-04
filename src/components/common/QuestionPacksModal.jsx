@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import {
   ArrowLeft,
@@ -10,8 +10,14 @@ import {
   Tag,
   AlertCircle,
   RefreshCw,
+  Search,
 } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
@@ -28,6 +34,113 @@ import { openRazorpayCheckout } from "@/lib/razorpay"
 import { INDIAN_GST_STATES, SUPPORTED_CURRENCIES } from "@/lib/constants"
 import { formatCurrency, getPackPricing, normalizeCurrency } from "@/lib/utils"
 
+function parseApplicableProducts(coupon) {
+  const raw = coupon?.applicable_products
+  if (Array.isArray(raw)) return raw
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+function isPackMatch(pkg, targetId) {
+  if (!pkg || !targetId) return false
+  const target = String(targetId).trim().toLowerCase()
+  return [pkg.id, pkg.code, pkg.packDbId].some(
+    (id) => id && String(id).trim().toLowerCase() === target
+  )
+}
+
+function findPack(packOrId, packList) {
+  if (!packOrId || !Array.isArray(packList)) return null
+  if (typeof packOrId === "object") return packOrId
+  return packList.find((p) => isPackMatch(p, packOrId)) || null
+}
+
+function doesCouponMatchPack(coupon, pkg) {
+  if (!coupon || coupon.is_active === false || !pkg) return false
+  const applicable = parseApplicableProducts(coupon)
+  if (applicable.length === 0) return true
+  return applicable.some((code) => isPackMatch(pkg, code))
+}
+
+function getCouponsForPack(pkg, coupons) {
+  if (!pkg || !Array.isArray(coupons)) return []
+  return coupons
+    .filter((c) => doesCouponMatchPack(c, pkg))
+    .sort((a, b) => {
+      const aSpecific = parseApplicableProducts(a).length > 0 ? 1 : 0
+      const bSpecific = parseApplicableProducts(b).length > 0 ? 1 : 0
+      return bSpecific - aSpecific
+    })
+}
+
+function getPrimaryCouponForPack(pkg, coupons) {
+  if (!pkg) return null
+  const matching = getCouponsForPack(pkg, coupons)
+  if (pkg.defaultPromoCode) {
+    const explicit = matching.find(
+      (c) =>
+        c.code?.toUpperCase() ===
+        String(pkg.defaultPromoCode).trim().toUpperCase()
+    )
+    if (explicit) return explicit
+  }
+  return matching[0] || null
+}
+
+function computePackWithCouponPricing(pkg, coupon, activeCurrency = "INR") {
+  const basePricing = getPackPricing(pkg, activeCurrency)
+  const subtotal = basePricing.originalPrice
+  const baseOffer = basePricing.offerPrice
+  const curr = basePricing.currency
+
+  if (!coupon || !doesCouponMatchPack(coupon, pkg)) {
+    return {
+      currency: curr,
+      subtotal,
+      offerPrice: baseOffer,
+      finalPrice: baseOffer,
+      discountAmount: Math.max(0, Number((subtotal - baseOffer).toFixed(2))),
+    }
+  }
+
+  let finalTotal = baseOffer
+  const discountType = String(coupon.discount_type || "pack_offer").toLowerCase()
+  const discountVal = Number(coupon.discount_value || 0)
+
+  if (discountType === "percentage" && discountVal > 0) {
+    finalTotal = Number((baseOffer * (1 - Math.min(100, discountVal) / 100)).toFixed(2))
+  } else if (discountType === "flat" && discountVal > 0) {
+    finalTotal = Math.max(0, Number((baseOffer - discountVal).toFixed(2)))
+  }
+
+  const effectiveSubtotal = Math.max(subtotal, baseOffer)
+  const discountAmount = Math.max(0, Number((effectiveSubtotal - finalTotal).toFixed(2)))
+
+  return {
+    currency: curr,
+    subtotal: effectiveSubtotal,
+    offerPrice: baseOffer,
+    finalPrice: finalTotal,
+    discountAmount,
+  }
+}
+
+function formatCouponBadgeText(coupon, currency = "INR") {
+  if (!coupon) return ""
+  const type = String(coupon.discount_type || "pack_offer").toLowerCase()
+  const val = Number(coupon.discount_value || 0)
+  if (type === "percentage" && val > 0) return `${val}% OFF`
+  if (type === "flat" && val > 0) return `${formatCurrency(val, currency)} OFF`
+  return "SPECIAL OFFER"
+}
+
 export default function QuestionPacksModal({
   isOpen,
   onClose,
@@ -37,9 +150,8 @@ export default function QuestionPacksModal({
   currency = "INR",
 }) {
   const dispatch = useDispatch()
-  const { isAuthenticated, user } = useSelector((state) => state.auth || {})
+  const { isAuthenticated, user } = useSelector((state) => state.auth)
 
-  // Dynamic backend catalog & currency state (strictly INR or USD)
   const [activeCurrency, setActiveCurrency] = useState(normalizeCurrency(currency))
   const [supportedCurrencies, setSupportedCurrencies] = useState(SUPPORTED_CURRENCIES)
   const [packs, setPacks] = useState([])
@@ -47,139 +159,96 @@ export default function QuestionPacksModal({
   const [isLoadingPacks, setIsLoadingPacks] = useState(false)
   const [packsError, setPacksError] = useState(null)
 
-  // Step & selection
-  const [step, setStep] = useState(1) // 1: Pack Selection, 2: Payment Summary
+  const [step, setStep] = useState(1)
   const [selectedPackId, setSelectedPackId] = useState(initialPackId || "")
   const [billingState, setBillingState] = useState("Delhi")
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false)
+  const [stateSearch, setStateSearch] = useState("")
 
-  // Promo code & order calculation
   const [appliedPromo, setAppliedPromo] = useState(initialPromoCode || "")
+  const [promoRemovedManually, setPromoRemovedManually] = useState(false)
   const [promoInput, setPromoInput] = useState("")
   const [isPromoInputVisible, setIsPromoInputVisible] = useState(false)
   const [isCouponsModalOpen, setIsCouponsModalOpen] = useState(false)
   const [isInitiating, setIsInitiating] = useState(false)
   const [serverBreakdown, setServerBreakdown] = useState(null)
-  const [, setIsValidatingPromo] = useState(false)
 
-  // Sync currency prop when passed
-  useEffect(() => {
-    if (currency) {
-      setActiveCurrency(normalizeCurrency(currency))
-    }
-  }, [currency])
+  const filteredBillingStates = useMemo(() => {
+    const q = stateSearch.trim().toLowerCase()
+    if (!q) return INDIAN_GST_STATES
+    return INDIAN_GST_STATES.filter((st) => st.toLowerCase().includes(q))
+  }, [stateSearch])
 
-  // Helper: extracts applicable products list from coupon
-  const getApplicableProducts = (coupon) => {
-    if (!coupon) return []
-    if (Array.isArray(coupon.applicable_products)) return coupon.applicable_products
-    if (typeof coupon.applicable_products === "string") {
-      try {
-        return JSON.parse(coupon.applicable_products)
-      } catch {
-        return []
-      }
-    }
-    return []
-  }
+  const questionPackCoupons = useMemo(() => {
+    if (!Array.isArray(coupons) || coupons.length === 0) return []
+    return coupons.filter((coupon) => {
+      if (coupon.is_active === false) return false
+      const applicable = parseApplicableProducts(coupon)
+      if (applicable.length === 0) return true
+      return packs.some((pkg) => doesCouponMatchPack(coupon, pkg))
+    })
+  }, [coupons, packs])
 
-  // Helper: get matching coupons for a given pack ID / code
-  const getCouponsForPack = useCallback(
-    (packId) => {
-      if (!packId || !coupons.length) return []
-      return coupons.filter((coupon) => {
-        if (coupon.is_active === false) return false
-        const applicable = getApplicableProducts(coupon)
-        return (
-          applicable.length === 0 ||
-          applicable.includes(packId) ||
-          applicable.includes(selectedPackId)
-        )
-      })
-    },
-    [coupons, selectedPackId]
-  )
-
-  // Helper: get default coupon code for a pack
-  const getDefaultPromoForPack = useCallback(
-    (packId) => {
-      const matching = getCouponsForPack(packId)
-      return matching[0]?.code || ""
-    },
-    [getCouponsForPack]
-  )
-
-  // Fetch dynamic packages and coupons from backend API
   const loadCatalog = useCallback(
-    async (currToFetch) => {
-      const targetCurrency = currToFetch || activeCurrency || "INR"
+    async (targetCurr) => {
       setIsLoadingPacks(true)
       setPacksError(null)
 
       try {
-        const response = await fetchBillingCatalog(targetCurrency)
+        const response = await fetchBillingCatalog(targetCurr)
         const catalogData = response?.data || response
         const questionPacks = catalogData?.questionPacks || []
         const availableCoupons = catalogData?.coupons || []
-        const backendCurrency = normalizeCurrency(catalogData?.currency || targetCurrency)
+        const backendCurrency = normalizeCurrency(catalogData?.currency || targetCurr)
         const rawCurrencies = catalogData?.supportedCurrencies || SUPPORTED_CURRENCIES
         const availableCurrencies = Array.isArray(rawCurrencies)
           ? rawCurrencies.filter((c) => SUPPORTED_CURRENCIES.includes(c))
           : SUPPORTED_CURRENCIES
 
         setActiveCurrency(backendCurrency)
-        setSupportedCurrencies(availableCurrencies.length > 0 ? availableCurrencies : SUPPORTED_CURRENCIES)
+        setSupportedCurrencies(
+          availableCurrencies.length > 0 ? availableCurrencies : SUPPORTED_CURRENCIES
+        )
         setPacks(questionPacks)
         setCoupons(availableCoupons)
 
-        // Auto-select preferred pack: initialPackId -> gold tier -> first pack
         const defaultPack =
-          questionPacks.find((p) => p.id === initialPackId || p.code === initialPackId) ||
-          questionPacks.find((p) => p.tier === "gold" || p.id?.includes("gold") || p.code?.includes("gold")) ||
+          findPack(initialPackId, questionPacks) ||
+          questionPacks.find((p) => p.tier === "gold" || p.code?.includes("gold")) ||
           questionPacks[0]
 
         if (defaultPack) {
-          const packKey = defaultPack.id || defaultPack.code
-          setSelectedPackId(packKey)
+          setSelectedPackId(defaultPack.code || defaultPack.id)
+          setPromoRemovedManually(false)
 
           if (initialPromoCode) {
-            setAppliedPromo(initialPromoCode)
+            setAppliedPromo(String(initialPromoCode).trim().toUpperCase())
           } else {
-            const matchingCoupons = availableCoupons.filter((c) => {
-              const applicable = getApplicableProducts(c)
-              return (
-                applicable.length === 0 ||
-                applicable.includes(defaultPack.id) ||
-                applicable.includes(defaultPack.code)
-              )
-            })
-            if (matchingCoupons.length > 0) {
-              setAppliedPromo(matchingCoupons[0].code)
-            } else {
-              setAppliedPromo("")
-            }
+            const primary = getPrimaryCouponForPack(defaultPack, availableCoupons)
+            setAppliedPromo(primary?.code || "")
           }
         }
       } catch (err) {
-        console.error("Failed to fetch billing catalog from backend:", err)
         setPacksError(
           err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load question packages from server. Please verify your connection."
+            err?.message ||
+            "Unable to load question packages from server."
         )
       } finally {
         setIsLoadingPacks(false)
       }
     },
-    [activeCurrency, initialPackId, initialPromoCode]
+    [initialPackId, initialPromoCode]
   )
 
   useEffect(() => {
     if (isOpen) {
+      const initialCurr = normalizeCurrency(currency)
+      setActiveCurrency(initialCurr)
       setStep(1)
-      loadCatalog()
+      loadCatalog(initialCurr)
     }
-  }, [isOpen, loadCatalog])
+  }, [isOpen, currency, loadCatalog])
 
   const handleCurrencyChange = (newCurrency) => {
     const safeCurr = normalizeCurrency(newCurrency)
@@ -192,144 +261,221 @@ export default function QuestionPacksModal({
   const handleModalClose = () => {
     setStep(1)
     setIsStateDropdownOpen(false)
+    setStateSearch("")
     setIsPromoInputVisible(false)
     setIsCouponsModalOpen(false)
+    setPromoRemovedManually(false)
     setServerBreakdown(null)
     onClose()
   }
 
-  // Selected pack resolution
-  const selectedPack =
-    packs.find((p) => p.id === selectedPackId || p.code === selectedPackId) ||
-    packs[0] ||
-    null
+  const selectedPack = useMemo(
+    () => findPack(selectedPackId, packs) || packs[0] || null,
+    [selectedPackId, packs]
+  )
 
-  // Selected pack dynamic pricing
   const selectedPricing = getPackPricing(selectedPack, activeCurrency)
 
-  // Badge mapping for UI display
+  const selectedPackCoupons = useMemo(
+    () => getCouponsForPack(selectedPack, questionPackCoupons),
+    [selectedPack, questionPackCoupons]
+  )
+
   const getBadgeForPack = (pkg) => {
-    if (pkg.tier === "gold" || pkg.id?.includes("gold") || pkg.code?.includes("gold")) return "POPULAR"
-    if (pkg.tier === "diamond" || pkg.id?.includes("diamond") || pkg.code?.includes("diamond")) return "BEST VALUE"
+    if (pkg.tier === "gold" || pkg.code?.includes("gold")) return "POPULAR"
+    if (pkg.tier === "diamond" || pkg.code?.includes("diamond")) return "BEST VALUE"
     return null
   }
 
-  // Active coupon lookup and applicability
-  const activeCoupon = coupons.find(
-    (c) => c.code?.toUpperCase() === appliedPromo?.trim().toUpperCase()
+  const activeCoupon = useMemo(
+    () =>
+      questionPackCoupons.find(
+        (c) => c.code?.toUpperCase() === appliedPromo?.trim().toUpperCase()
+      ) || null,
+    [questionPackCoupons, appliedPromo]
   )
 
   const isPromoApplicable = Boolean(
-    activeCoupon &&
-    selectedPack &&
-    (
-      getApplicableProducts(activeCoupon).length === 0 ||
-      getApplicableProducts(activeCoupon).includes(selectedPack.id) ||
-      getApplicableProducts(activeCoupon).includes(selectedPack.code)
-    )
+    activeCoupon && selectedPack && doesCouponMatchPack(activeCoupon, selectedPack)
   )
 
-  // Price calculations from dynamic backend pricing
-  const subtotal = selectedPricing.originalPrice
-  const offerPrice = selectedPricing.offerPrice
+  const computedPricing = useMemo(
+    () =>
+      computePackWithCouponPricing(
+        selectedPack,
+        isPromoApplicable ? activeCoupon : null,
+        activeCurrency
+      ),
+    [selectedPack, isPromoApplicable, activeCoupon, activeCurrency]
+  )
 
-  const isServerBreakdownFresh =
+  const isServerBreakdownFresh = Boolean(
     serverBreakdown &&
-    (serverBreakdown.packId === selectedPack?.id || serverBreakdown.packId === selectedPack?.code) &&
-    serverBreakdown.couponCode === appliedPromo &&
-    serverBreakdown.currency === selectedPricing.currency &&
-    serverBreakdown.billingState === (selectedPricing.currency === "INR" ? billingState : "International")
+      selectedPack &&
+      isPackMatch(selectedPack, serverBreakdown.packId) &&
+      String(serverBreakdown.couponCode || "").toUpperCase() ===
+        String(isPromoApplicable ? appliedPromo : "").toUpperCase() &&
+      serverBreakdown.currency === selectedPricing.currency &&
+      serverBreakdown.billingState ===
+        (selectedPricing.currency === "INR" ? billingState : "International")
+  )
+
+  const subtotal = isServerBreakdownFresh
+    ? serverBreakdown.subtotal
+    : computedPricing.subtotal
 
   const discount = isServerBreakdownFresh
     ? serverBreakdown.discountAmount
-    : isPromoApplicable
-    ? Math.max(0, subtotal - offerPrice)
-    : 0
+    : computedPricing.discountAmount
 
   const finalPrice = isServerBreakdownFresh
     ? serverBreakdown.totalAmount
-    : Math.max(0, subtotal - discount)
+    : computedPricing.finalPrice
 
-  // Selecting a pack
+  useEffect(() => {
+    if (
+      step !== 2 ||
+      !isAuthenticated ||
+      !selectedPack ||
+      !isPromoApplicable ||
+      !appliedPromo ||
+      isServerBreakdownFresh
+    ) {
+      return
+    }
+
+    let cancelled = false
+
+    validateCoupon({
+      packId: selectedPack.code || selectedPack.id,
+      couponCode: appliedPromo,
+      currency: selectedPricing.currency,
+      billingState:
+        selectedPricing.currency === "INR" ? billingState : "International",
+    })
+      .then((res) => {
+        if (!cancelled && res?.data) {
+          setServerBreakdown(res.data)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    step,
+    isAuthenticated,
+    selectedPack,
+    isPromoApplicable,
+    appliedPromo,
+    selectedPricing.currency,
+    billingState,
+    isServerBreakdownFresh,
+  ])
+
   const handleSelectPack = (pkg) => {
     if (!pkg) return
-    const packKey = pkg.id || pkg.code
-    setSelectedPackId(packKey)
+    setSelectedPackId(pkg.code || pkg.id)
     setServerBreakdown(null)
+    setPromoRemovedManually(false)
+    setIsPromoInputVisible(false)
 
-    // Check if current promo is still valid on the newly selected pack
-    const packCoupons = getCouponsForPack(packKey)
-    const isCurrentStillValid = packCoupons.some(
-      (c) => c.code?.toUpperCase() === appliedPromo?.toUpperCase()
-    )
-    if (!isCurrentStillValid) {
-      setAppliedPromo(packCoupons[0]?.code || "")
+    const relatedCoupon = getPrimaryCouponForPack(pkg, questionPackCoupons)
+    if (relatedCoupon) {
+      setAppliedPromo(relatedCoupon.code)
+    } else if (activeCoupon && doesCouponMatchPack(activeCoupon, pkg)) {
+      setAppliedPromo(activeCoupon.code)
+    } else {
+      setAppliedPromo("")
     }
   }
 
-  // Applying promo code
-  const handleApplyPromo = async (codeToApply) => {
+  const handleContinueToStep2 = () => {
+    if (!selectedPack) return
+    if (!promoRemovedManually && (!appliedPromo || !isPromoApplicable)) {
+      const primary = getPrimaryCouponForPack(selectedPack, questionPackCoupons)
+      if (primary?.code) {
+        setAppliedPromo(primary.code)
+      }
+    }
+    setStep(2)
+  }
+
+  const handleApplyPromo = async (codeToApply, targetPackOverride = null) => {
     const code = (codeToApply || promoInput).trim().toUpperCase()
     if (!code) return
 
-    const matchedCoupon = coupons.find((c) => c.code?.toUpperCase() === code)
+    const matchedCoupon = questionPackCoupons.find(
+      (c) => c.code?.toUpperCase() === code
+    )
     if (!matchedCoupon) {
-      toast.error(`Invalid coupon code "${code}".`)
+      toast.error(`Invalid or expired coupon code "${code}".`)
       return
     }
 
-    const applicable = getApplicableProducts(matchedCoupon)
-    const packMatches =
-      applicable.length === 0 ||
-      (selectedPack && (applicable.includes(selectedPack.id) || applicable.includes(selectedPack.code)))
+    const packToValidate = targetPackOverride || selectedPack
+    if (!packToValidate) return
 
-    if (!packMatches) {
-      toast.error(`Coupon "${code}" is not valid for ${selectedPack.name} Pack.`)
+    if (!doesCouponMatchPack(matchedCoupon, packToValidate)) {
+      toast.error(`Coupon "${code}" is not valid for ${packToValidate.name} Pack.`)
       return
     }
 
+    setPromoRemovedManually(false)
     setAppliedPromo(code)
+    setServerBreakdown(null)
     setIsPromoInputVisible(false)
     setIsCouponsModalOpen(false)
     setPromoInput("")
-    toast.success(`Coupon code ${code} applied successfully!`)
+    toast.success(`Coupon code ${code} applied to ${packToValidate.name} Pack!`)
 
-    // If authenticated, request verified GST & discount breakdown from backend
-    if (isAuthenticated && selectedPack) {
-      setIsValidatingPromo(true)
+    if (isAuthenticated) {
       try {
         const breakdownRes = await validateCoupon({
-          packId: selectedPack.code || selectedPack.id,
+          packId: packToValidate.code || packToValidate.id,
           couponCode: code,
           currency: selectedPricing.currency,
-          billingState: selectedPricing.currency === "INR" ? billingState : "International",
+          billingState:
+            selectedPricing.currency === "INR" ? billingState : "International",
         })
         if (breakdownRes?.data) {
           setServerBreakdown(breakdownRes.data)
         }
-      } catch (err) {
-        console.warn("Backend coupon validation warning:", err)
-      } finally {
-        setIsValidatingPromo(false)
+      } catch {
+        // Client-side pricing remains active
       }
     }
   }
 
   const handleRemovePromo = () => {
     setAppliedPromo("")
+    setPromoRemovedManually(true)
     setServerBreakdown(null)
     toast.info("Coupon code removed.")
   }
 
-  // Proceed to payment gateway via backend order creation
+  const formatApplicablePackNames = (coupon) => {
+    const applicable = parseApplicableProducts(coupon)
+    if (applicable.length === 0) return "All Question Packs"
+    const labels = applicable
+      .map((code) => {
+        const matchedPack = findPack(code, packs)
+        return matchedPack
+          ? `${matchedPack.name} Pack (${matchedPack.credits} Qs)`
+          : null
+      })
+      .filter(Boolean)
+
+    return labels.length > 0 ? labels.join(", ") : applicable.join(", ")
+  }
+
   const handleProceedToRazorpay = async () => {
     if (!selectedPack) return
 
     if (!isAuthenticated) {
       if (onOpenAuth) {
-        onOpenAuth(() => {
-          setStep(2)
-        })
+        onOpenAuth(() => setStep(2))
       } else {
         dispatch(openAuthModal())
       }
@@ -339,38 +485,35 @@ export default function QuestionPacksModal({
     setIsInitiating(true)
 
     try {
-      // 1. Create order on backend (passing packId/packCode). Backend computes all amounts.
-      const packCodeOrId = selectedPack.code || selectedPack.id
       const orderRes = await createRazorpayOrder({
-        packId: packCodeOrId,
+        packId: selectedPack.code || selectedPack.id,
         itemType: "questions",
         currency: selectedPricing.currency,
         couponCode: isPromoApplicable ? appliedPromo : undefined,
         billingState: selectedPricing.currency === "INR" ? billingState : "International",
       })
 
-      const backendKeyId = orderRes.keyId || orderRes.data?.keyId
-      const backendOrderId = orderRes.orderId || orderRes.data?.orderId
-      const amountSubunits = orderRes.amountSubunits || orderRes.data?.amountSubunits
-      const finalAmount = orderRes.amount || orderRes.data?.amount || finalPrice
-      const orderCurrency = orderRes.currency || orderRes.data?.currency || selectedPricing.currency
+      const orderData = orderRes?.data || orderRes
+      const backendKeyId = orderData?.keyId
+      const backendOrderId = orderData?.orderId
+      const amountSubunits = orderData?.amountSubunits
+      const finalAmount = orderData?.amount ?? finalPrice
+      const orderCurrency = orderData?.currency || selectedPricing.currency
 
       if (!backendKeyId) {
-        throw new Error("Razorpay Key ID was not returned by the backend order response.")
+        throw new Error("Razorpay Key ID was not returned by the server.")
       }
 
-      // 2. Release active focus & close Radix Dialog to avoid focus-trap collision with Razorpay iframe
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur()
       }
       handleModalClose()
 
-      // 3. Open official Razorpay modal outside Radix modal scope
       setTimeout(() => {
         openRazorpayCheckout({
           keyId: backendKeyId,
           orderId: backendOrderId,
-          amountSubunits: amountSubunits,
+          amountSubunits,
           amount: finalAmount,
           currency: orderCurrency,
           name: "Japaika",
@@ -382,7 +525,6 @@ export default function QuestionPacksModal({
           },
           onSuccess: async (paymentResponse) => {
             try {
-              // 4. Verify signature with real backend & fulfill quota
               const verifyRes = await verifyRazorpayPayment({
                 razorpay_order_id: paymentResponse.razorpay_order_id,
                 razorpay_payment_id: paymentResponse.razorpay_payment_id,
@@ -390,42 +532,17 @@ export default function QuestionPacksModal({
                 method: "standard",
               })
 
-              const creditsRemaining = verifyRes.data?.creditsRemaining
+              const creditsRemaining = verifyRes?.data?.creditsRemaining
               if (typeof creditsRemaining === "number") {
                 dispatch(setQuestionQuota(creditsRemaining))
                 dispatch(updateUserProfile({ creditBalance: creditsRemaining }))
               } else {
                 dispatch(addQuestionQuota(selectedPack.credits))
-                dispatch(updateUserProfile({ creditBalance: (user?.creditBalance || 0) + selectedPack.credits }))
-              }
-
-              // Save local invoice copy
-              try {
-                const existingInvoices = JSON.parse(
-                  localStorage.getItem("japaika_invoices") || "[]"
+                dispatch(
+                  updateUserProfile({
+                    creditBalance: (user?.creditBalance || 0) + selectedPack.credits,
+                  })
                 )
-                const inv = verifyRes.data?.invoice || {
-                  id: "INV-" + Date.now().toString().slice(-6),
-                  paymentId: paymentResponse.razorpay_payment_id,
-                  orderId: paymentResponse.razorpay_order_id,
-                  date: new Date().toISOString(),
-                  currency: orderCurrency,
-                  itemType: "questions",
-                  itemTitle: `${selectedPack.name} Pack (${selectedPack.credits} questions)`,
-                  subtotal: selectedPricing.originalPrice,
-                  discount: discount,
-                  couponCode: appliedPromo || "NONE",
-                  taxAmount: orderCurrency === "INR" ? Math.round((finalPrice * 18) / 118) : 0,
-                  total: finalPrice,
-                  billingState: orderCurrency === "INR" ? billingState : "International",
-                  status: "PAID",
-                  method: "Razorpay Standard",
-                  userName: user?.name || "Customer",
-                  userEmail: user?.email || "",
-                }
-                localStorage.setItem("japaika_invoices", JSON.stringify([inv, ...existingInvoices]))
-              } catch (e) {
-                console.warn("Failed to save local invoice:", e)
               }
 
               toast.success(
@@ -433,10 +550,9 @@ export default function QuestionPacksModal({
               )
               handleModalClose()
             } catch (verifyErr) {
-              console.error("Signature verification failed:", verifyErr)
               toast.error(
                 verifyErr?.response?.data?.message ||
-                "Payment was successful, but server verification failed. Please contact support."
+                  "Payment was successful, but server verification failed. Please contact support."
               )
             }
           },
@@ -459,11 +575,10 @@ export default function QuestionPacksModal({
         })
       }, 50)
     } catch (orderErr) {
-      console.error("Failed to create Razorpay order:", orderErr)
       toast.error(
         orderErr?.response?.data?.message ||
-        orderErr?.message ||
-        "Could not initialize checkout. Please check connection and try again."
+          orderErr?.message ||
+          "Could not initialize checkout. Please try again."
       )
     } finally {
       setIsInitiating(false)
@@ -480,7 +595,6 @@ export default function QuestionPacksModal({
           {/* ================= STEP 1: PACKAGES POPUP ================= */}
           {step === 1 && (
             <div className="flex flex-col">
-              {/* Header */}
               <div className="pt-7 sm:pt-8 px-7 sm:px-9 pb-2 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div>
                   <h2 className="font-serif text-2xl sm:text-[32px] font-normal text-foreground tracking-tight leading-tight">
@@ -492,7 +606,6 @@ export default function QuestionPacksModal({
                 </div>
 
                 <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                  {/* Multi-Currency Toggle */}
                   <div className="flex items-center gap-1 bg-accent/50 border border-border/80 rounded-full p-1 shadow-xs">
                     {supportedCurrencies.map((curr) => {
                       const isCurrActive = activeCurrency === curr
@@ -526,9 +639,7 @@ export default function QuestionPacksModal({
                 </div>
               </div>
 
-              {/* Main Content Area: Loading, Error, or Loaded Packs */}
               <div className="px-7 sm:px-9 py-6 sm:py-7">
-                {/* 1. Loading Skeleton */}
                 {isLoadingPacks && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {[1, 2, 3].map((idx) => (
@@ -556,7 +667,6 @@ export default function QuestionPacksModal({
                   </div>
                 )}
 
-                {/* 2. Error State with Retry Button */}
                 {!isLoadingPacks && packsError && (
                   <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-8 text-center flex flex-col items-center justify-center gap-3">
                     <AlertCircle className="w-8 h-8 text-destructive" />
@@ -565,7 +675,7 @@ export default function QuestionPacksModal({
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => loadCatalog()}
+                      onClick={() => loadCatalog(activeCurrency)}
                       className="mt-2 border-border/80 text-foreground hover:bg-accent flex items-center gap-2 cursor-pointer"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -574,15 +684,23 @@ export default function QuestionPacksModal({
                   </div>
                 )}
 
-                {/* 3. Loaded Packs Grid */}
                 {!isLoadingPacks && !packsError && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {packs.map((pkg) => {
-                      const isSelected = selectedPackId === pkg.id || selectedPackId === pkg.code
+                      const isSelected = isPackMatch(pkg, selectedPack?.code || selectedPack?.id)
                       const badge = getBadgeForPack(pkg)
-                      const pkgPricing = getPackPricing(pkg, activeCurrency)
-                      const unitPriceNum = Number(pkgPricing.offerPrice || 0) / Number(pkg.credits || 1)
-                      const defaultPromo = getDefaultPromoForPack(pkg.id || pkg.code)
+                      const packCoupons = getCouponsForPack(pkg, questionPackCoupons)
+                      const primaryCoupon =
+                        isSelected && isPromoApplicable
+                          ? activeCoupon
+                          : getPrimaryCouponForPack(pkg, questionPackCoupons)
+                      const cardPricing = computePackWithCouponPricing(
+                        pkg,
+                        primaryCoupon,
+                        activeCurrency
+                      )
+                      const unitPriceNum =
+                        Number(cardPricing.finalPrice || 0) / Number(pkg.credits || 1)
 
                       return (
                         <div
@@ -594,14 +712,12 @@ export default function QuestionPacksModal({
                               : "border-border/80 bg-accent/20 hover:border-border hover:bg-accent/40 shadow-xs"
                           }`}
                         >
-                          {/* Floating Badge (Popular / Best Value) */}
                           {badge && (
                             <span className="absolute -top-3 left-5 bg-amber-500 text-white dark:text-black font-bold text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs">
                               {badge}
                             </span>
                           )}
 
-                          {/* Top Row: Tier Name + Radio Circle */}
                           <div>
                             <div className="flex items-center justify-between">
                               <span className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
@@ -618,7 +734,6 @@ export default function QuestionPacksModal({
                               </div>
                             </div>
 
-                            {/* Giant Number of Questions */}
                             <div className="mt-4">
                               <div className="font-serif text-[56px] sm:text-[62px] font-light text-foreground tracking-tight leading-none">
                                 {pkg.credits}
@@ -629,28 +744,46 @@ export default function QuestionPacksModal({
                             </div>
                           </div>
 
-                          {/* Divider & Price Section */}
                           <div>
                             <div className="border-t border-border/60 my-5" />
 
                             <div className="flex items-baseline gap-2">
                               <span className="font-mono text-2xl sm:text-[26px] font-semibold text-foreground">
-                                {formatCurrency(pkgPricing.offerPrice, pkgPricing.currency)}
+                                {formatCurrency(cardPricing.finalPrice, cardPricing.currency)}
                               </span>
-                              {pkgPricing.originalPrice > pkgPricing.offerPrice && (
+                              {cardPricing.subtotal > cardPricing.finalPrice && (
                                 <span className="font-mono text-xs text-muted-foreground/60 line-through">
-                                  {formatCurrency(pkgPricing.originalPrice, pkgPricing.currency)}
+                                  {formatCurrency(cardPricing.subtotal, cardPricing.currency)}
                                 </span>
                               )}
                             </div>
 
                             <div className="text-xs text-muted-foreground mt-1 font-sans">
-                              {formatCurrency(unitPriceNum, pkgPricing.currency)} per question
+                              {formatCurrency(unitPriceNum, cardPricing.currency)} per question
                             </div>
 
-                            {defaultPromo && (
-                              <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground mt-4">
-                                CODE <span className="text-foreground font-semibold">{defaultPromo}</span>
+                            {primaryCoupon && (
+                              <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                                <span
+                                  className={`inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md border ${
+                                    isSelected
+                                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold"
+                                      : "bg-accent/50 border-border/80 text-muted-foreground"
+                                  }`}
+                                >
+                                  <Tag className="w-2.5 h-2.5 shrink-0" />
+                                  <span>CODE {primaryCoupon.code}</span>
+                                </span>
+                                {primaryCoupon.discount_type !== "pack_offer" && (
+                                  <span className="text-[10px] font-mono font-semibold text-amber-600 dark:text-amber-400">
+                                    {formatCouponBadgeText(primaryCoupon, cardPricing.currency)}
+                                  </span>
+                                )}
+                                {packCoupons.length > 1 && (
+                                  <span className="text-[10px] font-mono text-muted-foreground">
+                                    +{packCoupons.length - 1} more
+                                  </span>
+                                )}
                               </div>
                             )}
                           </div>
@@ -661,7 +794,6 @@ export default function QuestionPacksModal({
                 )}
               </div>
 
-              {/* Footer Bar */}
               <div className="bg-card/70 px-7 sm:px-9 py-5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <span className="text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground">
                   SECURE PAYMENT · {selectedPricing.currency === "INR" ? "GST INVOICE" : "TAX INVOICE"} · INSTANT CREDIT
@@ -670,14 +802,14 @@ export default function QuestionPacksModal({
                 <Button
                   type="button"
                   disabled={!selectedPack || isLoadingPacks}
-                  onClick={() => setStep(2)}
+                  onClick={handleContinueToStep2}
                   className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3.5 rounded-full font-medium shadow-md shadow-primary/20 hover:brightness-105 transition flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer disabled:opacity-50"
                 >
                   {selectedPack ? (
                     <>
                       <span>Continue with {selectedPack.credits} questions</span>
                       <span className="text-primary-foreground/40">·</span>
-                      <span>{formatCurrency(selectedPricing.offerPrice, selectedPricing.currency)}</span>
+                      <span>{formatCurrency(finalPrice, selectedPricing.currency)}</span>
                       <span className="text-base">→</span>
                     </>
                   ) : (
@@ -691,7 +823,6 @@ export default function QuestionPacksModal({
           {/* ================= STEP 2: PAYMENT SUMMARY ================= */}
           {step === 2 && selectedPack && (
             <div className="flex flex-col">
-              {/* Header with Back button and Step indicator */}
               <div className="pt-7 sm:pt-8 px-7 sm:px-9 pb-4 flex items-center justify-between border-b border-border/60">
                 <div className="flex items-center gap-4">
                   <button
@@ -722,9 +853,7 @@ export default function QuestionPacksModal({
                 </button>
               </div>
 
-              {/* 2-Column Grid */}
               <div className="px-7 sm:px-9 py-6 sm:py-7 grid grid-cols-1 md:grid-cols-12 gap-8">
-                {/* Left Column: Pack Review, State, Promo */}
                 <div className="md:col-span-7 space-y-6">
                   {/* 1. YOUR PACK & QUICK SWITCH */}
                   <div>
@@ -743,9 +872,17 @@ export default function QuestionPacksModal({
 
                     <div className="grid grid-cols-3 gap-2.5">
                       {packs.map((pkg) => {
-                        const isSelected = selectedPackId === pkg.id || selectedPackId === pkg.code
+                        const isSelected = isPackMatch(pkg, selectedPack?.code || selectedPack?.id)
                         const badge = getBadgeForPack(pkg)
-                        const pPricing = getPackPricing(pkg, activeCurrency)
+                        const relatedCoupon =
+                          isSelected && isPromoApplicable
+                            ? activeCoupon
+                            : getPrimaryCouponForPack(pkg, questionPackCoupons)
+                        const pPricing = computePackWithCouponPricing(
+                          pkg,
+                          relatedCoupon,
+                          activeCurrency
+                        )
                         return (
                           <div
                             key={pkg.id || pkg.code}
@@ -785,7 +922,7 @@ export default function QuestionPacksModal({
                                 <span className="text-xs font-sans text-muted-foreground">Qs</span>
                               </div>
                               <div className="font-mono text-xs text-foreground font-medium mt-1">
-                                {formatCurrency(pPricing.offerPrice, pPricing.currency)}
+                                {formatCurrency(pPricing.finalPrice, pPricing.currency)}
                               </div>
                             </div>
                           </div>
@@ -810,44 +947,76 @@ export default function QuestionPacksModal({
                     </div>
 
                     {selectedPricing.currency === "INR" ? (
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)}
-                          className="w-full rounded-2xl border border-border/80 bg-accent/30 px-5 py-3.5 text-sm text-foreground flex items-center justify-between hover:border-primary/40 transition cursor-pointer"
-                        >
-                          <span>{billingState}</span>
-                          <ChevronDown
-                            className={`w-4 h-4 text-muted-foreground transition-transform ${
-                              isStateDropdownOpen ? "rotate-180" : ""
-                            }`}
-                          />
-                        </button>
+                      <Popover
+                        open={isStateDropdownOpen}
+                        onOpenChange={(open) => {
+                          setIsStateDropdownOpen(open)
+                          if (!open) setStateSearch("")
+                        }}
+                      >
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="w-full rounded-2xl border border-border/80 bg-accent/30 px-5 py-3.5 text-sm text-foreground flex items-center justify-between hover:border-primary/40 transition cursor-pointer"
+                          >
+                            <span>{billingState}</span>
+                            <ChevronDown
+                              className={`w-4 h-4 text-muted-foreground transition-transform ${
+                                isStateDropdownOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+                        </PopoverTrigger>
 
-                        {isStateDropdownOpen && (
-                          <div className="absolute z-30 left-0 right-0 mt-1.5 max-h-52 overflow-y-auto rounded-2xl border border-border/80 bg-card/95 p-2 shadow-2xl backdrop-blur-xl">
-                            {INDIAN_GST_STATES.map((state) => (
-                              <div
-                                key={state}
-                                onClick={() => {
-                                  setBillingState(state)
-                                  setIsStateDropdownOpen(false)
-                                }}
-                                className={`px-4 py-2.5 text-xs rounded-xl cursor-pointer transition flex items-center justify-between ${
-                                  billingState === state
-                                    ? "bg-primary/15 text-primary font-semibold"
-                                    : "text-foreground/80 hover:bg-accent hover:text-foreground"
-                                }`}
-                              >
-                                <span>{state}</span>
-                                {billingState === state && (
-                                  <Check className="w-3.5 h-3.5 text-primary" />
-                                )}
-                              </div>
-                            ))}
+                        <PopoverContent
+                          align="start"
+                          sideOffset={6}
+                          collisionPadding={16}
+                          onWheel={(e) => e.stopPropagation()}
+                          className="w-[var(--radix-popover-trigger-width)] rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground p-2 shadow-2xl backdrop-blur-xl z-[100]"
+                        >
+                          <div className="relative mb-1.5">
+                            <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                              type="text"
+                              value={stateSearch}
+                              onChange={(e) => setStateSearch(e.target.value)}
+                              placeholder="Search state or UT..."
+                              className="w-full rounded-xl border border-border/70 bg-accent/30 pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                            />
                           </div>
-                        )}
-                      </div>
+
+                          <div className="max-h-52 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5">
+                            {filteredBillingStates.length > 0 ? (
+                              filteredBillingStates.map((state) => (
+                                <button
+                                  type="button"
+                                  key={state}
+                                  onClick={() => {
+                                    setBillingState(state)
+                                    setIsStateDropdownOpen(false)
+                                    setStateSearch("")
+                                  }}
+                                  className={`w-full px-3.5 py-2 text-xs rounded-xl cursor-pointer transition flex items-center justify-between text-left ${
+                                    billingState === state
+                                      ? "bg-primary/15 text-primary font-semibold"
+                                      : "text-foreground/80 hover:bg-accent hover:text-foreground"
+                                  }`}
+                                >
+                                  <span>{state}</span>
+                                  {billingState === state && (
+                                    <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                  )}
+                                </button>
+                              ))
+                            ) : (
+                              <div className="px-3.5 py-3 text-xs text-muted-foreground text-center">
+                                No matching state found
+                              </div>
+                            )}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     ) : (
                       <div className="w-full rounded-2xl border border-border/80 bg-accent/30 px-5 py-3.5 text-sm text-foreground/80 font-mono">
                         International ({selectedPricing.currency}) · GST Exempt
@@ -861,61 +1030,121 @@ export default function QuestionPacksModal({
                       <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-emerald-600 dark:text-emerald-400 font-semibold">
                         PROMO CODE
                       </span>
-                      {coupons.length > 0 && (
+                      {questionPackCoupons.length > 0 && (
                         <button
                           type="button"
                           onClick={() => setIsCouponsModalOpen(true)}
                           className="text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground hover:text-foreground transition cursor-pointer"
                         >
-                          VIEW ALL COUPONS &gt;
+                          VIEW ALL COUPONS ({questionPackCoupons.length}) &gt;
                         </button>
                       )}
                     </div>
 
                     {isPromoApplicable && !isPromoInputVisible ? (
-                      <div className="w-full rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3.5 flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      <div className="space-y-2">
+                        <div className="w-full rounded-2xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-3.5 flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
+                            <div className="truncate">
+                              <span className="text-foreground font-mono font-semibold tracking-wider">
+                                {appliedPromo}
+                              </span>
+                              {activeCoupon?.discount_type &&
+                                activeCoupon.discount_type !== "pack_offer" && (
+                                  <span className="ml-2 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                                    ({formatCouponBadgeText(activeCoupon, selectedPricing.currency)})
+                                  </span>
+                                )}
+                            </div>
                           </div>
-                          <span className="text-foreground font-mono font-semibold tracking-wider">
-                            {appliedPromo}
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                              Applied
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleRemovePromo}
+                              className="text-muted-foreground hover:text-foreground cursor-pointer ml-1 p-0.5"
+                              aria-label="Remove promo code"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Applied</span>
-                          <button
-                            type="button"
-                            onClick={handleRemovePromo}
-                            className="text-muted-foreground hover:text-foreground cursor-pointer ml-1 p-0.5"
-                            aria-label="Remove promo code"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+
+                        {selectedPackCoupons.length > 1 && (
+                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mr-1">
+                              Pack Coupons:
+                            </span>
+                            {selectedPackCoupons.map((c) => {
+                              const isCurrent =
+                                c.code?.toUpperCase() ===
+                                appliedPromo?.trim().toUpperCase()
+                              return (
+                                <button
+                                  key={c.code}
+                                  type="button"
+                                  onClick={() => handleApplyPromo(c.code)}
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase tracking-wider border transition cursor-pointer ${
+                                    isCurrent
+                                      ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-semibold"
+                                      : "bg-accent/40 border-border/80 text-muted-foreground hover:text-foreground"
+                                  }`}
+                                >
+                                  {c.code}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          placeholder="e.g. QUICKGOLD or ASKMAX"
-                          value={promoInput}
-                          onChange={(e) => setPromoInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault()
-                              handleApplyPromo()
-                            }
-                          }}
-                          className="flex-1 rounded-2xl border border-border/80 bg-accent/30 px-5 py-3 text-xs text-foreground uppercase placeholder:text-muted-foreground focus:outline-none focus:border-primary font-mono"
-                        />
-                        <Button
-                          type="button"
-                          onClick={() => handleApplyPromo()}
-                          className="bg-accent hover:bg-accent/80 text-foreground text-xs px-5 rounded-2xl cursor-pointer h-auto border border-border/80"
-                        >
-                          Apply
-                        </Button>
+                      <div className="space-y-2.5">
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            placeholder="Enter coupon code"
+                            value={promoInput}
+                            onChange={(e) => setPromoInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault()
+                                handleApplyPromo()
+                              }
+                            }}
+                            className="flex-1 rounded-2xl border border-border/80 bg-accent/30 px-5 py-3 text-xs text-foreground uppercase placeholder:text-muted-foreground focus:outline-none focus:border-primary font-mono"
+                          />
+                          <Button
+                            type="button"
+                            onClick={() => handleApplyPromo()}
+                            className="bg-accent hover:bg-accent/80 text-foreground text-xs px-5 rounded-2xl cursor-pointer h-auto border border-border/80"
+                          >
+                            Apply
+                          </Button>
+                        </div>
+
+                        {selectedPackCoupons.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mr-1">
+                              Available for {selectedPack.name}:
+                            </span>
+                            {selectedPackCoupons.map((c) => (
+                              <button
+                                key={c.code}
+                                type="button"
+                                onClick={() => handleApplyPromo(c.code)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono uppercase tracking-wider bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold transition cursor-pointer"
+                              >
+                                <Tag className="w-2.5 h-2.5" />
+                                <span>{c.code}</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -934,10 +1163,25 @@ export default function QuestionPacksModal({
                         <span className="font-mono">{formatCurrency(subtotal, selectedPricing.currency)}</span>
                       </div>
 
-                      {isPromoApplicable && discount > 0 && (
+                      {isPromoApplicable && (
                         <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
-                          <span className="text-xs">{appliedPromo} discount</span>
-                          <span className="font-mono">− {formatCurrency(discount, selectedPricing.currency)}</span>
+                          <span className="text-xs">
+                            {appliedPromo} coupon applied
+                          </span>
+                          <span className="font-mono">
+                            {discount > 0
+                              ? `− ${formatCurrency(discount, selectedPricing.currency)}`
+                              : "Active"}
+                          </span>
+                        </div>
+                      )}
+
+                      {!isPromoApplicable && discount > 0 && (
+                        <div className="flex justify-between items-center text-muted-foreground">
+                          <span className="text-xs">Pack offer savings</span>
+                          <span className="font-mono">
+                            − {formatCurrency(discount, selectedPricing.currency)}
+                          </span>
                         </div>
                       )}
 
@@ -964,7 +1208,6 @@ export default function QuestionPacksModal({
                     </div>
                   </div>
 
-                  {/* Proceed to Pay Button */}
                   <div className="mt-8 space-y-2.5">
                     <Button
                       type="button"
@@ -1012,44 +1255,65 @@ export default function QuestionPacksModal({
           </div>
 
           <div className="space-y-3 py-3 max-h-[60vh] overflow-y-auto">
-            {coupons.map((coupon) => {
-              const applicable = getApplicableProducts(coupon)
+            {questionPackCoupons.map((coupon) => {
+              const applicable = parseApplicableProducts(coupon)
+              const matchesSelected =
+                selectedPack && doesCouponMatchPack(coupon, selectedPack)
+              const isCurrentlyApplied =
+                isPromoApplicable &&
+                appliedPromo?.trim().toUpperCase() ===
+                  coupon.code?.toUpperCase()
+
               return (
                 <div
                   key={coupon.code}
-                  className="p-3.5 rounded-2xl border border-border/80 bg-accent/20 flex items-center justify-between gap-3 shadow-xs"
+                  className={`p-3.5 rounded-2xl border flex items-center justify-between gap-3 shadow-xs transition-colors ${
+                    isCurrentlyApplied
+                      ? "border-emerald-500/40 bg-emerald-500/10"
+                      : "border-border/80 bg-accent/20"
+                  }`}
                 >
-                  <div>
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="font-mono text-xs font-bold text-amber-600 dark:text-amber-300 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-md">
                         {coupon.code}
+                      </span>
+                      <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                        {formatCouponBadgeText(coupon, selectedPricing.currency)}
                       </span>
                     </div>
                     <p className="text-xs text-foreground/80 mt-1.5 font-medium">
                       {coupon.description || `${coupon.code} special discount`}
                     </p>
-                    {applicable.length > 0 && (
-                      <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
-                        Valid on: {applicable.join(", ")}
-                      </p>
-                    )}
+                    <p className="text-[10px] text-muted-foreground mt-0.5 font-mono">
+                      Valid on: {formatApplicablePackNames(coupon)}
+                    </p>
                   </div>
                   <Button
                     size="sm"
-                    variant="outline"
+                    variant={isCurrentlyApplied ? "default" : "outline"}
                     onClick={() => {
-                      if (
-                        applicable.length > 0 &&
-                        !applicable.includes(selectedPack?.id) &&
-                        !applicable.includes(selectedPack?.code)
-                      ) {
-                        setSelectedPackId(applicable[0])
+                      let targetPack = selectedPack
+                      if (!matchesSelected && applicable.length > 0) {
+                        const firstMatchingPack =
+                          findPack(applicable[0], packs) ||
+                          packs.find((p) => doesCouponMatchPack(coupon, p))
+                        if (firstMatchingPack) {
+                          targetPack = firstMatchingPack
+                          setSelectedPackId(
+                            firstMatchingPack.code || firstMatchingPack.id
+                          )
+                        }
                       }
-                      handleApplyPromo(coupon.code)
+                      handleApplyPromo(coupon.code, targetPack)
                     }}
-                    className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 text-xs shrink-0 cursor-pointer rounded-xl"
+                    className={`text-xs shrink-0 cursor-pointer rounded-xl ${
+                      isCurrentlyApplied
+                        ? "bg-emerald-600 hover:bg-emerald-600/90 text-white"
+                        : "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+                    }`}
                   >
-                    Apply
+                    {isCurrentlyApplied ? "Applied" : "Apply"}
                   </Button>
                 </div>
               )
@@ -1057,7 +1321,6 @@ export default function QuestionPacksModal({
           </div>
         </DialogContent>
       </Dialog>
-
     </>
   )
 }

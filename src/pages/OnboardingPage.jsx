@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { useNavigate } from "react-router-dom"
 import {
@@ -11,6 +11,11 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover"
 import VedicDatePicker from "@/components/common/VedicDatePicker"
 import VedicTimePicker from "@/components/common/VedicTimePicker"
 import { toast } from "sonner"
@@ -20,6 +25,14 @@ import {
   setOnboardingStep,
   updateOnboardingData,
 } from "@/features/auth/authSlice"
+
+function formatLocationName(loc) {
+  return (
+    loc.displayName ||
+    loc.place ||
+    [loc.city, loc.region, loc.country].filter(Boolean).join(", ")
+  )
+}
 
 export default function OnboardingPage() {
   const dispatch = useDispatch()
@@ -31,20 +44,16 @@ export default function OnboardingPage() {
     onboardingData,
     isOnboardingSubmitting,
     onboardingError,
-  } = useSelector((state) => state.auth || {})
+  } = useSelector((state) => state.auth)
 
-  // Step 1: Name and Gender Local State
   const [name, setName] = useState(() => onboardingData?.name || user?.name || "")
   const [gender, setGender] = useState(() => onboardingData?.gender || "female")
-
-  // Step 2: Birth Details & Location Local State
   const [dob, setDob] = useState(() => onboardingData?.dob || "")
   const [tob, setTob] = useState(() => onboardingData?.tob || "")
   const [isTimeUnknown, setIsTimeUnknown] = useState(
-    () => onboardingData?.isTimeUnknown || false
+    () => Boolean(onboardingData?.isTimeUnknown)
   )
 
-  // Location Autocomplete State
   const [locationQuery, setLocationQuery] = useState(
     () => onboardingData?.location?.city || ""
   )
@@ -54,16 +63,13 @@ export default function OnboardingPage() {
   const [locationSuggestions, setLocationSuggestions] = useState([])
   const [isSearchingLocation, setIsSearchingLocation] = useState(false)
   const [showLocationDropdown, setShowLocationDropdown] = useState(false)
-  const dropdownRef = useRef(null)
 
-  // Sync user name from auth state if it loads asynchronously
   useEffect(() => {
     if (user?.name && !name) {
       setName(user.name)
     }
   }, [user?.name, name])
 
-  // Debounced Location Autocomplete (/vedic/location/autocomplete)
   useEffect(() => {
     const trimmed = locationQuery.trim()
     if (!showLocationDropdown || trimmed.length < 2) {
@@ -77,14 +83,11 @@ export default function OnboardingPage() {
         const response = await apiClient.get("/vedic/location/autocomplete", {
           params: { query: trimmed, limit: 8 },
         })
-        const results =
-          response.data?.results ||
-          response.data?.data?.results ||
-          response.data?.data ||
-          []
-        setLocationSuggestions(results)
-      } catch (err) {
-        console.error("Location autocomplete error:", err)
+        setLocationSuggestions(
+          response.data?.data?.results || response.data?.results || []
+        )
+      } catch {
+        setLocationSuggestions([])
       } finally {
         setIsSearchingLocation(false)
       }
@@ -93,36 +96,13 @@ export default function OnboardingPage() {
     return () => clearTimeout(timer)
   }, [locationQuery, showLocationDropdown])
 
-  // Click outside listener for location dropdown
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setShowLocationDropdown(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [])
-
-  // Location Suggestion Select Handler
   const handleSelectLocation = (loc) => {
-    const city =
-      loc.displayName ||
-      loc.place ||
-      `${loc.city || ""}${loc.region ? `, ${loc.region}` : ""}${
-        loc.country ? `, ${loc.country}` : ""
-      }`.replace(/^,\s*/, "")
-
-    const lat = loc.latitude ?? loc.lat
-    const lng = loc.longitude ?? loc.lng ?? loc.lon
-    const timezoneOffset =
-      loc.timezoneOffset ?? loc.timezone ?? (loc.tz ? parseFloat(loc.tz) : 5.5)
-
+    const city = formatLocationName(loc)
     const locData = {
       city,
-      lat: Number(lat),
-      lng: Number(lng),
-      timezoneOffset: Number(timezoneOffset),
+      lat: Number(loc.latitude ?? loc.lat),
+      lng: Number(loc.longitude ?? loc.lng),
+      timezoneOffset: Number(loc.timezoneOffset ?? loc.timezone ?? 5.5),
     }
 
     setSelectedLocation(locData)
@@ -130,7 +110,6 @@ export default function OnboardingPage() {
     setShowLocationDropdown(false)
   }
 
-  // Preserves entered birth details if user returns to Step 1
   const handleBackToStep1 = () => {
     dispatch(
       updateOnboardingData({
@@ -145,7 +124,6 @@ export default function OnboardingPage() {
     dispatch(setOnboardingStep(1))
   }
 
-  // STEP 1 SUBMIT -> Save to state and advance to Step 2
   const handleStep1Submit = (e) => {
     e.preventDefault()
     const trimmedName = name.trim()
@@ -163,7 +141,6 @@ export default function OnboardingPage() {
     dispatch(setOnboardingStep(2))
   }
 
-  // STEP 2 SUBMIT -> Send combined data to backend POST /api/v1/onboarding
   const handleStep2Submit = async (e) => {
     e.preventDefault()
 
@@ -173,52 +150,48 @@ export default function OnboardingPage() {
     }
 
     if (!isTimeUnknown && !tob) {
-      toast.error("Please specify your time of birth or select 'I don't know my time of birth'.")
+      toast.error(
+        "Please specify your time of birth or select 'I don't know my time of birth'."
+      )
       return
     }
 
-    if (!selectedLocation || selectedLocation.lat === undefined) {
+    if (!selectedLocation || Number.isNaN(selectedLocation.lat)) {
       toast.error("Please select a valid place of birth from the suggestions.")
       return
     }
-
-    const finalTob = isTimeUnknown ? "12:00" : tob
 
     const payload = {
       name: (name || onboardingData?.name || user?.name || "").trim(),
       gender: (gender || onboardingData?.gender || "female").toLowerCase(),
       dob,
-      tob: finalTob,
+      tob: isTimeUnknown ? "12:00" : tob,
       isTimeUnknown,
       location: {
         city: selectedLocation.city,
         lat: selectedLocation.lat,
         lng: selectedLocation.lng,
-        timezone: selectedLocation.timezoneOffset ?? 5.5,
-        timezoneOffset: selectedLocation.timezoneOffset ?? 5.5,
+        timezone: selectedLocation.timezoneOffset,
+        timezoneOffset: selectedLocation.timezoneOffset,
       },
     }
 
     const result = await dispatch(submitOnboarding(payload))
 
     if (!result.error) {
-      // Successful onboarding -> redirect to dashboard
       navigate("/", { replace: true })
     }
   }
 
   return (
     <div className="min-h-full w-full py-4 sm:py-8 lg:py-12 px-3 sm:px-6 lg:px-8 flex flex-col items-center justify-start lg:justify-center relative overflow-x-hidden font-sans">
-      {/* Background Celestial Glowing Orbs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 dark:bg-primary/15 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-[140px] pointer-events-none" />
 
-      {/* Main Glassmorphic Onboarding Card */}
       <div className="w-full max-w-xl lg:max-w-4xl lg:my-auto bg-card/90 dark:bg-card/80 backdrop-blur-2xl border border-border/80 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden grid grid-cols-1 lg:grid-cols-5 relative z-10 transition-colors duration-200">
         {/* ================= LEFT HERO COLUMN (Desktop Only) ================= */}
         <div className="hidden lg:flex lg:col-span-2 p-6 lg:p-8 bg-accent/40 dark:bg-accent/20 border-r border-border/80 flex-col justify-between relative overflow-hidden">
           <div className="space-y-6 relative z-10">
-            {/* Brand Logo & Name */}
             <div className="flex items-center gap-3">
               <img
                 src="/japaikaLogo.svg"
@@ -237,7 +210,6 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Heading & Motivation */}
             <div className="pt-2">
               <h2 className="text-2xl sm:text-3xl font-serif font-normal text-foreground leading-tight">
                 This needs your{" "}
@@ -251,43 +223,48 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            {/* Key Assurance Checklist */}
             <ul className="space-y-3 pt-2 text-xs text-muted-foreground">
               <li className="flex items-start gap-2.5">
                 <span className="p-1 rounded-full bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
                   <Check className="w-3 h-3 stroke-[3]" />
                 </span>
-                <span className="text-foreground/90 font-medium">Readings saved to your natal chart, never a cookie</span>
+                <span className="text-foreground/90 font-medium">
+                  Readings saved to your natal chart, never a cookie
+                </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="p-1 rounded-full bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
                   <Check className="w-3 h-3 stroke-[3]" />
                 </span>
-                <span className="text-foreground/90 font-medium">Jyotish AI remembers your planetary transits and dashas</span>
+                <span className="text-foreground/90 font-medium">
+                  Jyotish AI remembers your planetary transits and dashas
+                </span>
               </li>
               <li className="flex items-start gap-2.5">
                 <span className="p-1 rounded-full bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">
                   <Check className="w-3 h-3 stroke-[3]" />
                 </span>
-                <span className="text-foreground/90 font-medium">Calculators and Shastra stay free & unbounded</span>
+                <span className="text-foreground/90 font-medium">
+                  Calculators and Shastra stay free & unbounded
+                </span>
               </li>
             </ul>
           </div>
 
-          {/* Engine Footer Badge */}
           <div className="pt-6 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground font-mono">
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               Swiss Ephemeris 2.10
             </span>
-            <span className="text-amber-600 dark:text-amber-400 font-medium">Lahiri Ayanamsa</span>
+            <span className="text-amber-600 dark:text-amber-400 font-medium">
+              Lahiri Ayanamsa
+            </span>
           </div>
         </div>
 
         {/* ================= RIGHT INTERACTIVE FORM COLUMN ================= */}
         <div className="lg:col-span-3 p-5 sm:p-7 lg:p-8 flex flex-col justify-between bg-card/60 dark:bg-card/40">
           <div>
-            {/* Top Step Progress Bar */}
             <div className="mb-5 sm:mb-6">
               <div className="flex items-center justify-between text-[10px] font-mono tracking-[0.2em] mb-2">
                 <span className="text-primary font-semibold flex items-center gap-1.5 uppercase">
@@ -314,7 +291,6 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            {/* Error Banner */}
             {onboardingError && (
               <div className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-xs text-destructive">
                 {onboardingError}
@@ -333,7 +309,6 @@ export default function OnboardingPage() {
                   </p>
                 </div>
 
-                {/* Name Input */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground block">
                     FULL NAME *
@@ -349,7 +324,6 @@ export default function OnboardingPage() {
                   />
                 </div>
 
-                {/* Gender Pills Selection */}
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground block">
                     GENDER *
@@ -418,7 +392,6 @@ export default function OnboardingPage() {
                   </p>
                 </div>
 
-                {/* Date & Time Row - Stacks on mobile, 2 columns on tablet/desktop */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground block">
@@ -444,7 +417,6 @@ export default function OnboardingPage() {
                   </div>
                 </div>
 
-                {/* Time Unknown Checkbox */}
                 <label className="flex items-center gap-2.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground select-none py-0.5">
                   <input
                     type="checkbox"
@@ -455,8 +427,7 @@ export default function OnboardingPage() {
                   <span>I don&apos;t know my exact time of birth</span>
                 </label>
 
-                {/* Place of Birth Input with Real Autocomplete */}
-                <div className="space-y-1.5 relative" ref={dropdownRef}>
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <label className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground block">
                       PLACE OF BIRTH *
@@ -469,52 +440,61 @@ export default function OnboardingPage() {
                     )}
                   </div>
 
-                  <div className="relative">
-                    <MapPin className="w-4 h-4 text-muted-foreground absolute left-3.5 top-3.5 z-10 shrink-0" />
-                    <Input
-                      type="text"
-                      placeholder="Search city, state, country..."
-                      value={locationQuery}
-                      onChange={(e) => {
-                        setLocationQuery(e.target.value)
-                        setShowLocationDropdown(true)
-                        if (selectedLocation && selectedLocation.city !== e.target.value) {
-                          setSelectedLocation(null)
-                        }
-                      }}
-                      onFocus={() => {
-                        if (locationQuery.trim().length >= 2) {
-                          setShowLocationDropdown(true)
-                        }
-                      }}
-                      className="w-full rounded-xl sm:rounded-2xl border border-border/80 bg-accent/30 dark:bg-accent/20 pl-10 pr-10 py-2.5 sm:py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all h-auto"
-                      required
-                    />
+                  <Popover
+                    open={showLocationDropdown && locationSuggestions.length > 0}
+                    onOpenChange={(open) => {
+                      if (!open) setShowLocationDropdown(false)
+                    }}
+                  >
+                    <PopoverAnchor asChild>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-muted-foreground absolute left-3.5 top-3.5 z-10 shrink-0" />
+                        <Input
+                          type="text"
+                          placeholder="Search city, state, country..."
+                          value={locationQuery}
+                          onChange={(e) => {
+                            setLocationQuery(e.target.value)
+                            setShowLocationDropdown(true)
+                            if (selectedLocation && selectedLocation.city !== e.target.value) {
+                              setSelectedLocation(null)
+                            }
+                          }}
+                          onFocus={() => {
+                            if (locationQuery.trim().length >= 2) {
+                              setShowLocationDropdown(true)
+                            }
+                          }}
+                          className="w-full rounded-xl sm:rounded-2xl border border-border/80 bg-accent/30 dark:bg-accent/20 pl-10 pr-10 py-2.5 sm:py-3 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary transition-all h-auto"
+                          required
+                        />
 
-                    {isSearchingLocation && (
-                      <Loader2 className="w-4 h-4 text-primary absolute right-3.5 top-3.5 animate-spin" />
-                    )}
-                  </div>
+                        {isSearchingLocation && (
+                          <Loader2 className="w-4 h-4 text-primary absolute right-3.5 top-3.5 animate-spin" />
+                        )}
+                      </div>
+                    </PopoverAnchor>
 
-                  {/* Autocomplete Dropdown Menu */}
-                  {showLocationDropdown && locationSuggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-popover border border-border/80 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-48 sm:max-h-56 overflow-y-auto no-scrollbar">
+                    <PopoverContent
+                      align="start"
+                      sideOffset={6}
+                      collisionPadding={16}
+                      onOpenAutoFocus={(e) => e.preventDefault()}
+                      onCloseAutoFocus={(e) => e.preventDefault()}
+                      onWheel={(e) => e.stopPropagation()}
+                      className="w-[var(--radix-popover-anchor-width)] p-0 bg-popover text-popover-foreground border border-border/80 rounded-2xl shadow-2xl overflow-hidden z-[100] max-h-56 overflow-y-auto overscroll-contain"
+                    >
                       {locationSuggestions.map((loc, idx) => {
-                        const displayName =
-                          loc.displayName ||
-                          loc.place ||
-                          `${loc.city || ""}${loc.region ? `, ${loc.region}` : ""}${
-                            loc.country ? `, ${loc.country}` : ""
-                          }`.replace(/^,\s*/, "")
-
+                        const displayName = formatLocationName(loc)
                         const tz = loc.timezoneOffset ?? loc.timezone ?? 5.5
                         const lat = (loc.latitude ?? loc.lat)?.toFixed?.(2)
-                        const lng = (loc.longitude ?? loc.lng ?? loc.lon)?.toFixed?.(2)
+                        const lng = (loc.longitude ?? loc.lng)?.toFixed?.(2)
 
                         return (
                           <button
                             key={idx}
                             type="button"
+                            onMouseDown={(e) => e.preventDefault()}
                             onClick={() => handleSelectLocation(loc)}
                             className="w-full text-left px-3.5 sm:px-4 py-2.5 hover:bg-accent transition-colors border-b border-border/40 last:border-0 flex items-center justify-between group cursor-pointer gap-2"
                           >
@@ -530,8 +510,8 @@ export default function OnboardingPage() {
                           </button>
                         )
                       })}
-                    </div>
-                  )}
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="pt-2">
@@ -548,10 +528,10 @@ export default function OnboardingPage() {
                     {isOnboardingSubmitting ? (
                       <span className="inline-flex items-center gap-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating Vedic Chart & Binding...
+                        Calculating Birth Chart...
                       </span>
                     ) : (
-                      "Create Birth Chart & Enter"
+                      "Save & Continue to Japaika"
                     )}
                   </Button>
                 </div>
@@ -559,13 +539,10 @@ export default function OnboardingPage() {
             )}
           </div>
 
-          {/* Footer Security / Engine Notice */}
-          <div className="text-[10px] text-center font-mono text-muted-foreground/70 pt-4 flex items-center justify-center gap-1.5 sm:gap-2">
+          <div className="pt-5 mt-5 border-t border-border/60 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground text-center">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
             <span>
-              {onboardingStep === 1
-                ? "STEP 1 SAVES YOUR IDENTITY TO MEMORY"
-                : "STEP 2 BINDS YOUR EPHEMERIS NATAL CHART"}
+              Your birth details are encrypted and used exclusively for Vedic calculations.
             </span>
           </div>
         </div>

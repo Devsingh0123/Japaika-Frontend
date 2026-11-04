@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import {
   MapPin,
@@ -9,12 +9,17 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover";
 import { apiClient } from "@/lib/api-client";
 import VedicDatePicker from "@/components/common/VedicDatePicker";
 import VedicTimePicker from "@/components/common/VedicTimePicker";
 
 function PartnerInputCard({
-  partnerType, // 'boy' | 'girl'
+  partnerType,
   title,
   subtitle,
   data,
@@ -26,29 +31,25 @@ function PartnerInputCard({
   const [suggestions, setSuggestions] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef(null);
 
-  // Sync location text if external data updates
   useEffect(() => {
-    if (data.city && data.city !== locationInput) {
-      setLocationInput(data.city);
-    }
-  }, [data.city, locationInput]);
+    setLocationInput(data.city || "");
+  }, [data.city]);
 
-  // Debounced location search
   useEffect(() => {
-    if (!showDropdown || locationInput.trim().length < 2) {
+    const query = locationInput.trim();
+    if (!showDropdown || query.length < 2) {
       setSuggestions([]);
       return;
     }
+
     const timer = setTimeout(async () => {
       try {
         setIsSearching(true);
         const res = await apiClient.get("/vedic/location/autocomplete", {
-          params: { query: locationInput.trim(), limit: 6 },
+          params: { query, limit: 6 },
         });
-        const list = res.data?.results || res.data?.data?.results || res.data?.data || [];
-        setSuggestions(list);
+        setSuggestions(res.data?.data?.results || res.data?.results || []);
       } catch {
         setSuggestions([]);
       } finally {
@@ -59,25 +60,14 @@ function PartnerInputCard({
     return () => clearTimeout(timer);
   }, [locationInput, showDropdown]);
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setShowDropdown(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleSelectLocation = (loc) => {
     const cityName = loc.displayName || loc.place || loc.city;
     setLocationInput(cityName);
     onChange({
       city: cityName,
-      lat: loc.latitude ?? loc.lat,
-      lng: loc.longitude ?? loc.lng,
-      timezone: loc.timezone ?? loc.timezoneOffset ?? 5.5,
+      lat: Number(loc.latitude ?? loc.lat),
+      lng: Number(loc.longitude ?? loc.lng),
+      timezone: Number(loc.timezone ?? loc.timezoneOffset ?? 5.5),
     });
     setShowDropdown(false);
   };
@@ -117,7 +107,6 @@ function PartnerInputCard({
       </div>
 
       <div className="space-y-3.5">
-        {/* Name */}
         <div>
           <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
             Full Name
@@ -131,16 +120,15 @@ function PartnerInputCard({
               required
               value={data.name}
               onChange={(e) => onChange({ name: e.target.value })}
-              placeholder={isBoy ? "Groom's Name" : "Bride's Name"}
+              placeholder="Enter full name"
               className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
             />
           </div>
         </div>
 
-        {/* Date of Birth */}
-        <div className="space-y-1">
-          <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-            Date of Birth *
+        <div>
+          <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
+            Date of Birth
           </label>
           <VedicDatePicker
             value={data.dob}
@@ -149,19 +137,16 @@ function PartnerInputCard({
           />
         </div>
 
-        {/* Time of Birth */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
               Time of Birth
             </label>
-            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer hover:text-foreground transition">
+            <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={data.isTimeUnknown}
-                onChange={(e) =>
-                  onChange({ isTimeUnknown: e.target.checked })
-                }
+                onChange={(e) => onChange({ isTimeUnknown: e.target.checked })}
                 className="w-3.5 h-3.5 rounded border-border bg-accent/40 accent-primary"
               />
               <span>Time Unknown</span>
@@ -175,95 +160,101 @@ function PartnerInputCard({
           />
         </div>
 
-        {/* Location Autocomplete */}
-        <div className="relative" ref={dropdownRef}>
+        <div>
           <label className="block text-[11px] font-mono uppercase tracking-wider text-muted-foreground mb-1">
             Birth City & Location
           </label>
-          <div
-            className={`flex items-center gap-2 rounded-xl border border-border/80 bg-accent/30 dark:bg-accent/20 px-3.5 py-2.5 ${borderColor} transition-colors`}
-          >
-            <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              required
-              value={locationInput}
-              onChange={(e) => {
-                setLocationInput(e.target.value);
-                setShowDropdown(true);
-              }}
-              onFocus={() => setShowDropdown(true)}
-              placeholder="Search birth city, state, country..."
-              className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
-            />
-            {isSearching && (
-              <Loader2 className="w-4 h-4 text-muted-foreground animate-spin shrink-0" />
-            )}
-          </div>
 
-          {/* Location Dropdown */}
-          {showDropdown && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 top-full mt-1.5 z-50 rounded-2xl border border-border/80 bg-popover shadow-2xl backdrop-blur-2xl overflow-hidden py-1.5">
+          <Popover
+            open={showDropdown && suggestions.length > 0}
+            onOpenChange={(open) => {
+              if (!open) setShowDropdown(false);
+            }}
+          >
+            <PopoverAnchor asChild>
+              <div
+                className={`flex items-center gap-2 rounded-xl border border-border/80 bg-accent/30 dark:bg-accent/20 px-3.5 py-2.5 ${borderColor} transition-colors`}
+              >
+                <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                <input
+                  type="text"
+                  required
+                  value={locationInput}
+                  onChange={(e) => {
+                    setLocationInput(e.target.value);
+                    setShowDropdown(true);
+                    onChange({ city: "", lat: undefined, lng: undefined });
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  placeholder="Search birth city, state, country..."
+                  className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none"
+                />
+                {isSearching && (
+                  <Loader2 className="w-4 h-4 text-muted-foreground animate-spin shrink-0" />
+                )}
+              </div>
+            </PopoverAnchor>
+
+            <PopoverContent
+              align="start"
+              sideOffset={6}
+              collisionPadding={16}
+              onOpenAutoFocus={(e) => e.preventDefault()}
+              onCloseAutoFocus={(e) => e.preventDefault()}
+              onWheel={(e) => e.stopPropagation()}
+              className="w-[var(--radix-popover-anchor-width)] rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-2xl backdrop-blur-2xl max-h-56 overflow-y-auto overscroll-contain p-1.5 z-[100]"
+            >
               {suggestions.map((loc, idx) => (
                 <button
                   key={`${loc.displayName || loc.place}-${idx}`}
                   type="button"
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSelectLocation(loc)}
-                  className="w-full px-3.5 py-2.5 text-left text-xs text-popover-foreground hover:bg-accent/50 transition-colors flex items-center gap-2.5"
+                  className="w-full px-3.5 py-2.5 rounded-xl text-left text-xs text-popover-foreground hover:bg-accent/50 transition-colors flex items-center gap-2.5 cursor-pointer"
                 >
                   <MapPin className="w-3.5 h-3.5 text-primary shrink-0" />
                   <span className="truncate">
-                    {loc.displayName || `${loc.place}, ${loc.country || ""}`}
+                    {loc.displayName || loc.place || loc.city}
                   </span>
                 </button>
               ))}
-            </div>
-          )}
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
     </div>
   );
 }
 
+const EMPTY_PARTNER = {
+  name: "",
+  dob: "",
+  tob: "",
+  isTimeUnknown: false,
+  city: "",
+  lat: undefined,
+  lng: undefined,
+  timezone: 5.5,
+};
+
 export default function DualBirthForm({ onSubmit, isLoading = false }) {
-  const { isAuthenticated, birthDetails } = useSelector(
-    (state) => state.auth || {}
-  );
+  const { isAuthenticated, birthDetails } = useSelector((state) => state.auth);
 
-  const [boyData, setBoyData] = useState({
-    name: "Alex",
-    dob: "1992-05-15",
-    tob: "14:30",
-    isTimeUnknown: false,
-    city: "New Delhi, Delhi, India",
-    lat: 28.6139,
-    lng: 77.209,
-    timezone: 5.5,
-  });
-
-  const [girlData, setGirlData] = useState({
-    name: "Priya",
-    dob: "1994-08-20",
-    tob: "09:15",
-    isTimeUnknown: false,
-    city: "Mumbai, Maharashtra, India",
-    lat: 19.076,
-    lng: 72.8777,
-    timezone: 5.5,
-  });
-
+  const [boyData, setBoyData] = useState(EMPTY_PARTNER);
+  const [girlData, setGirlData] = useState(EMPTY_PARTNER);
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleAutoFill = (target) => {
     if (!birthDetails) return;
+    const rawTime = birthDetails.timeOfBirth || birthDetails.tob || "";
     const patch = {
-      name: birthDetails.fullName || birthDetails.name || "My Chart",
-      dob: birthDetails.dateOfBirth || birthDetails.dob || "1995-01-01",
-      tob: birthDetails.timeOfBirth || birthDetails.tob || "12:00",
+      name: birthDetails.fullName || birthDetails.name || "",
+      dob: (birthDetails.dateOfBirth || birthDetails.dob || "").split("T")[0],
+      tob: rawTime ? rawTime.slice(0, 5) : "",
       isTimeUnknown: Boolean(birthDetails.isTimeUnknown),
-      city: birthDetails.birthCity || birthDetails.city || "New Delhi, India",
-      lat: Number(birthDetails.latitude ?? birthDetails.lat ?? 28.6139),
-      lng: Number(birthDetails.longitude ?? birthDetails.lng ?? 77.209),
+      city: birthDetails.birthCity || birthDetails.city || "",
+      lat: Number(birthDetails.latitude ?? birthDetails.lat),
+      lng: Number(birthDetails.longitude ?? birthDetails.lng),
       timezone: Number(birthDetails.timezone ?? 5.5),
     };
 
@@ -278,12 +269,12 @@ export default function DualBirthForm({ onSubmit, isLoading = false }) {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!boyData.lat || !boyData.lng || !boyData.dob) {
-      setErrorMsg("Please select a valid birth city and date for Partner 1.");
+    if (!boyData.name.trim() || !boyData.dob || boyData.lat == null || boyData.lng == null) {
+      setErrorMsg("Please complete name, date of birth, and a valid birth city for Partner 1.");
       return;
     }
-    if (!girlData.lat || !girlData.lng || !girlData.dob) {
-      setErrorMsg("Please select a valid birth city and date for Partner 2.");
+    if (!girlData.name.trim() || !girlData.dob || girlData.lat == null || girlData.lng == null) {
+      setErrorMsg("Please complete name, date of birth, and a valid birth city for Partner 2.");
       return;
     }
 
@@ -299,7 +290,6 @@ export default function DualBirthForm({ onSubmit, isLoading = false }) {
         </div>
       )}
 
-      {/* 2-Column Responsive Dual Card Form */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <PartnerInputCard
           partnerType="boy"
@@ -322,24 +312,22 @@ export default function DualBirthForm({ onSubmit, isLoading = false }) {
         />
       </div>
 
-      {/* Submit Button */}
       <div className="flex justify-center pt-2">
         <Button
           type="submit"
           disabled={isLoading}
-          size="lg"
-          className="w-full sm:w-auto px-10 py-4 h-auto rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-base shadow-md shadow-primary/25 transition-all cursor-pointer flex items-center justify-center gap-2"
+          className="w-full sm:w-auto min-w-[260px] bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl py-6 px-8 text-sm shadow-lg shadow-primary/20 cursor-pointer transition-all"
         >
           {isLoading ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Analyzing 36 Vedic Gunas...</span>
-            </>
+            <span className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Calculating Ashtakoota Milan...</span>
+            </span>
           ) : (
-            <>
-              <Heart className="w-5 h-5 fill-current" />
-              <span>Check Kundli Milan (36 Gunas)</span>
-            </>
+            <span className="flex items-center gap-2">
+              <Heart className="w-4 h-4 fill-current" />
+              <span>Analyze Compatibility (36 Guna)</span>
+            </span>
           )}
         </Button>
       </div>

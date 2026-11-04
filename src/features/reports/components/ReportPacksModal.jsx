@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { useSelector, useDispatch } from "react-redux"
 import {
   ArrowLeft,
@@ -10,8 +10,14 @@ import {
   Tag,
   AlertCircle,
   RefreshCw,
+  Search,
 } from "lucide-react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "sonner"
@@ -28,6 +34,31 @@ import { openRazorpayCheckout } from "@/lib/razorpay"
 import { INDIAN_GST_STATES, SUPPORTED_CURRENCIES } from "@/lib/constants"
 import { formatCurrency, getPackPricing, normalizeCurrency } from "@/lib/utils"
 
+function getApplicableProducts(coupon) {
+  const raw = coupon?.applicable_products
+  if (Array.isArray(raw)) return raw
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw)
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+function doesCouponMatchPack(coupon, pkg) {
+  if (!coupon || coupon.is_active === false || !pkg) return false
+  const applicable = getApplicableProducts(coupon)
+  if (applicable.length === 0) return true
+  return (
+    applicable.includes(pkg.id) ||
+    applicable.includes(pkg.code) ||
+    applicable.includes(pkg.packDbId)
+  )
+}
+
 export default function ReportPacksModal({
   isOpen,
   onClose,
@@ -38,9 +69,8 @@ export default function ReportPacksModal({
   currency = "INR",
 }) {
   const dispatch = useDispatch()
-  const { isAuthenticated, user } = useSelector((state) => state.auth || {})
+  const { isAuthenticated, user } = useSelector((state) => state.auth)
 
-  // Dynamic backend catalog & currency state (strictly INR or USD)
   const [activeCurrency, setActiveCurrency] = useState(normalizeCurrency(currency))
   const [supportedCurrencies, setSupportedCurrencies] = useState(SUPPORTED_CURRENCIES)
   const [packs, setPacks] = useState([])
@@ -48,93 +78,65 @@ export default function ReportPacksModal({
   const [isLoadingPacks, setIsLoadingPacks] = useState(false)
   const [packsError, setPacksError] = useState(null)
 
-  // Step & selection
-  const [step, setStep] = useState(1) // 1: Pack Selection, 2: Payment Summary
+  const [step, setStep] = useState(1)
   const [selectedPackId, setSelectedPackId] = useState(initialPackId || "")
   const [billingState, setBillingState] = useState("Delhi")
   const [isStateDropdownOpen, setIsStateDropdownOpen] = useState(false)
+  const [stateSearch, setStateSearch] = useState("")
 
-  // Promo code & order calculation
   const [appliedPromo, setAppliedPromo] = useState(initialPromoCode || "")
   const [promoInput, setPromoInput] = useState("")
   const [isPromoInputVisible, setIsPromoInputVisible] = useState(false)
   const [isCouponsModalOpen, setIsCouponsModalOpen] = useState(false)
   const [isInitiating, setIsInitiating] = useState(false)
   const [serverBreakdown, setServerBreakdown] = useState(null)
-  const [, setIsValidatingPromo] = useState(false)
 
-  // Sync currency prop when passed
-  useEffect(() => {
-    if (currency) {
-      setActiveCurrency(normalizeCurrency(currency))
-    }
-  }, [currency])
+  const filteredBillingStates = useMemo(() => {
+    const q = stateSearch.trim().toLowerCase()
+    if (!q) return INDIAN_GST_STATES
+    return INDIAN_GST_STATES.filter((st) => st.toLowerCase().includes(q))
+  }, [stateSearch])
 
-  // Helper: extracts applicable products list from coupon
-  const getApplicableProducts = (coupon) => {
-    if (!coupon) return []
-    if (Array.isArray(coupon.applicable_products)) return coupon.applicable_products
-    if (typeof coupon.applicable_products === "string") {
-      try {
-        return JSON.parse(coupon.applicable_products)
-      } catch {
-        return []
-      }
-    }
-    return []
-  }
-
-  // Helper: get matching coupons for a given pack ID / code / packDbId
   const getCouponsForPack = useCallback(
-    (packId) => {
-      if (!packId || !coupons.length) return []
-      const currentPack = packs.find(
-        (p) => p.id === packId || p.code === packId || p.packDbId === packId
-      )
-      const idsToCheck = [
-        packId,
-        selectedPackId,
-        currentPack?.id,
-        currentPack?.code,
-        currentPack?.packDbId,
-      ].filter(Boolean)
-
-      return coupons.filter((coupon) => {
-        if (coupon.is_active === false) return false
-        const applicable = getApplicableProducts(coupon)
-        return (
-          applicable.length === 0 ||
-          idsToCheck.some((id) => applicable.includes(id))
-        )
-      })
+    (packOrId) => {
+      if (!packOrId || !coupons.length) return []
+      const targetPack =
+        typeof packOrId === "object"
+          ? packOrId
+          : packs.find(
+              (p) =>
+                p.id === packOrId ||
+                p.code === packOrId ||
+                p.packDbId === packOrId
+            )
+      if (!targetPack) return []
+      return coupons.filter((coupon) => doesCouponMatchPack(coupon, targetPack))
     },
-    [coupons, packs, selectedPackId]
+    [coupons, packs]
   )
 
-  // Helper: get default coupon code for a pack
   const getDefaultPromoForPack = useCallback(
     (packId) => {
-      const pack = packs.find((p) => p.id === packId || p.code === packId || p.packDbId === packId)
+      const pack = packs.find(
+        (p) => p.id === packId || p.code === packId || p.packDbId === packId
+      )
       if (pack?.defaultPromoCode) return pack.defaultPromoCode
-      const matching = getCouponsForPack(packId)
-      return matching[0]?.code || ""
+      return getCouponsForPack(pack)[0]?.code || ""
     },
     [getCouponsForPack, packs]
   )
 
-  // Fetch dynamic packages and coupons from backend API
   const loadCatalog = useCallback(
-    async (currToFetch) => {
-      const targetCurrency = currToFetch || activeCurrency || "INR"
+    async (targetCurr) => {
       setIsLoadingPacks(true)
       setPacksError(null)
 
       try {
-        const response = await fetchBillingCatalog(targetCurrency)
+        const response = await fetchBillingCatalog(targetCurr)
         const catalogData = response?.data || response
         const reportPacks = catalogData?.reportPacks || []
         const availableCoupons = catalogData?.coupons || []
-        const backendCurrency = normalizeCurrency(catalogData?.currency || targetCurrency)
+        const backendCurrency = normalizeCurrency(catalogData?.currency || targetCurr)
         const rawCurrencies = catalogData?.supportedCurrencies || SUPPORTED_CURRENCIES
         const availableCurrencies = Array.isArray(rawCurrencies)
           ? rawCurrencies.filter((c) => SUPPORTED_CURRENCIES.includes(c))
@@ -145,58 +147,52 @@ export default function ReportPacksModal({
         setPacks(reportPacks)
         setCoupons(availableCoupons)
 
-        // Auto-select preferred pack: initialPackId -> diamond tier -> gold tier -> first pack
         const defaultPack =
-          reportPacks.find((p) => p.id === initialPackId || p.code === initialPackId || p.packDbId === initialPackId) ||
-          reportPacks.find((p) => p.tier === "diamond" || p.id?.includes("diamond") || p.code?.includes("diamond")) ||
-          reportPacks.find((p) => p.tier === "gold" || p.id?.includes("gold") || p.code?.includes("gold")) ||
+          reportPacks.find(
+            (p) =>
+              p.id === initialPackId ||
+              p.code === initialPackId ||
+              p.packDbId === initialPackId
+          ) ||
+          reportPacks.find((p) => p.tier === "diamond" || p.code?.includes("diamond")) ||
+          reportPacks.find((p) => p.tier === "gold" || p.code?.includes("gold")) ||
           reportPacks[0]
 
         if (defaultPack) {
-          const packKey = defaultPack.code || defaultPack.id || defaultPack.packDbId
-          setSelectedPackId(packKey)
+          setSelectedPackId(defaultPack.code || defaultPack.id || defaultPack.packDbId)
 
           if (initialPromoCode) {
             setAppliedPromo(initialPromoCode)
           } else if (defaultPack.defaultPromoCode) {
             setAppliedPromo(defaultPack.defaultPromoCode)
           } else {
-            const matchingCoupons = availableCoupons.filter((c) => {
-              const applicable = getApplicableProducts(c)
-              return (
-                applicable.length === 0 ||
-                applicable.includes(defaultPack.id) ||
-                applicable.includes(defaultPack.code) ||
-                applicable.includes(defaultPack.packDbId)
-              )
-            })
-            if (matchingCoupons.length > 0) {
-              setAppliedPromo(matchingCoupons[0].code)
-            } else {
-              setAppliedPromo("")
-            }
+            const matching = availableCoupons.filter((c) =>
+              doesCouponMatchPack(c, defaultPack)
+            )
+            setAppliedPromo(matching[0]?.code || "")
           }
         }
       } catch (err) {
-        console.error("Failed to fetch billing catalog from backend:", err)
         setPacksError(
           err?.response?.data?.message ||
-          err?.message ||
-          "Unable to load report packages from server. Please verify your connection."
+            err?.message ||
+            "Unable to load report packages from server."
         )
       } finally {
         setIsLoadingPacks(false)
       }
     },
-    [activeCurrency, initialPackId, initialPromoCode]
+    [initialPackId, initialPromoCode]
   )
 
   useEffect(() => {
     if (isOpen) {
+      const initialCurr = normalizeCurrency(currency)
+      setActiveCurrency(initialCurr)
       setStep(1)
-      loadCatalog()
+      loadCatalog(initialCurr)
     }
-  }, [isOpen, loadCatalog])
+  }, [isOpen, currency, loadCatalog])
 
   const handleCurrencyChange = (newCurrency) => {
     const safeCurr = normalizeCurrency(newCurrency)
@@ -209,49 +205,43 @@ export default function ReportPacksModal({
   const handleModalClose = () => {
     setStep(1)
     setIsStateDropdownOpen(false)
+    setStateSearch("")
     setIsPromoInputVisible(false)
     setIsCouponsModalOpen(false)
     setServerBreakdown(null)
     onClose()
   }
 
-  // Selected pack resolution (supports code, id, or database packDbId)
   const selectedPack =
-    packs.find((p) => p.id === selectedPackId || p.code === selectedPackId || p.packDbId === selectedPackId) ||
+    packs.find(
+      (p) =>
+        p.id === selectedPackId ||
+        p.code === selectedPackId ||
+        p.packDbId === selectedPackId
+    ) ||
     packs[0] ||
     null
 
-  // Selected pack dynamic pricing
   const selectedPricing = getPackPricing(selectedPack, activeCurrency)
 
-  // Badge mapping for UI display
   const getBadgeForPack = (pkg) => {
-    if (pkg.tier === "diamond" || pkg.id?.includes("diamond") || pkg.code?.includes("diamond") || pkg.credits >= 4) {
+    if (pkg.tier === "diamond" || pkg.code?.includes("diamond") || pkg.credits >= 4) {
       return "BEST VALUE"
     }
-    if (pkg.tier === "gold" || pkg.id?.includes("gold") || pkg.code?.includes("gold") || pkg.credits === 2) {
+    if (pkg.tier === "gold" || pkg.code?.includes("gold") || pkg.credits === 2) {
       return "POPULAR"
     }
     return null
   }
 
-  // Active coupon lookup and applicability
   const activeCoupon = coupons.find(
     (c) => c.code?.toUpperCase() === appliedPromo?.trim().toUpperCase()
   )
 
   const isPromoApplicable = Boolean(
-    activeCoupon &&
-    selectedPack &&
-    (
-      getApplicableProducts(activeCoupon).length === 0 ||
-      getApplicableProducts(activeCoupon).includes(selectedPack.id) ||
-      getApplicableProducts(activeCoupon).includes(selectedPack.code) ||
-      getApplicableProducts(activeCoupon).includes(selectedPack.packDbId)
-    )
+    activeCoupon && selectedPack && doesCouponMatchPack(activeCoupon, selectedPack)
   )
 
-  // Price calculations from dynamic backend pricing
   const subtotal = selectedPricing.originalPrice
   const offerPrice = selectedPricing.offerPrice
 
@@ -262,7 +252,8 @@ export default function ReportPacksModal({
       serverBreakdown.packId === selectedPack?.packDbId) &&
     serverBreakdown.couponCode === appliedPromo &&
     serverBreakdown.currency === selectedPricing.currency &&
-    serverBreakdown.billingState === (selectedPricing.currency === "INR" ? billingState : "International")
+    serverBreakdown.billingState ===
+      (selectedPricing.currency === "INR" ? billingState : "International")
 
   const discount = isServerBreakdownFresh
     ? serverBreakdown.discountAmount
@@ -274,15 +265,13 @@ export default function ReportPacksModal({
     ? serverBreakdown.totalAmount
     : Math.max(0, subtotal - discount)
 
-  // Selecting a pack
   const handleSelectPack = (pkg) => {
     if (!pkg) return
     const packKey = pkg.code || pkg.id || pkg.packDbId
     setSelectedPackId(packKey)
     setServerBreakdown(null)
 
-    // Check if current promo is still valid on the newly selected pack
-    const packCoupons = getCouponsForPack(packKey)
+    const packCoupons = getCouponsForPack(pkg)
     const isCurrentStillValid = packCoupons.some(
       (c) => c.code?.toUpperCase() === appliedPromo?.toUpperCase()
     )
@@ -291,7 +280,6 @@ export default function ReportPacksModal({
     }
   }
 
-  // Applying promo code
   const handleApplyPromo = async (codeToApply) => {
     const code = (codeToApply || promoInput).trim().toUpperCase()
     if (!code) return
@@ -302,15 +290,7 @@ export default function ReportPacksModal({
       return
     }
 
-    const applicable = getApplicableProducts(matchedCoupon)
-    const packMatches =
-      applicable.length === 0 ||
-      (selectedPack &&
-        (applicable.includes(selectedPack.id) ||
-          applicable.includes(selectedPack.code) ||
-          applicable.includes(selectedPack.packDbId)))
-
-    if (!packMatches) {
+    if (!doesCouponMatchPack(matchedCoupon, selectedPack)) {
       toast.error(`Coupon "${code}" is not valid for ${selectedPack.name} Pack.`)
       return
     }
@@ -321,23 +301,20 @@ export default function ReportPacksModal({
     setPromoInput("")
     toast.success(`Coupon code ${code} applied successfully!`)
 
-    // If authenticated, request verified GST & discount breakdown from backend
     if (isAuthenticated && selectedPack) {
-      setIsValidatingPromo(true)
       try {
         const breakdownRes = await validateCoupon({
           packId: selectedPack.code || selectedPack.id,
           couponCode: code,
           currency: selectedPricing.currency,
-          billingState: selectedPricing.currency === "INR" ? billingState : "International",
+          billingState:
+            selectedPricing.currency === "INR" ? billingState : "International",
         })
         if (breakdownRes?.data) {
           setServerBreakdown(breakdownRes.data)
         }
-      } catch (err) {
-        console.warn("Backend coupon validation warning:", err)
-      } finally {
-        setIsValidatingPromo(false)
+      } catch {
+        // Client-side pricing fallback remains active
       }
     }
   }
@@ -348,15 +325,12 @@ export default function ReportPacksModal({
     toast.info("Coupon code removed.")
   }
 
-  // Proceed to payment gateway via backend order creation
   const handleProceedToRazorpay = async () => {
     if (!selectedPack) return
 
     if (!isAuthenticated) {
       if (onOpenAuth) {
-        onOpenAuth(() => {
-          setStep(2)
-        })
+        onOpenAuth(() => setStep(2))
       } else {
         dispatch(openAuthModal())
       }
@@ -366,38 +340,35 @@ export default function ReportPacksModal({
     setIsInitiating(true)
 
     try {
-      // 1. Create order on backend (passing packId/packCode). Backend computes all amounts.
-      const packCodeOrId = selectedPack.code || selectedPack.id
       const orderRes = await createRazorpayOrder({
-        packId: packCodeOrId,
+        packId: selectedPack.code || selectedPack.id,
         itemType: "report_pack",
         currency: selectedPricing.currency,
         couponCode: isPromoApplicable ? appliedPromo : undefined,
         billingState: selectedPricing.currency === "INR" ? billingState : "International",
       })
 
-      const backendKeyId = orderRes.keyId || orderRes.data?.keyId
-      const backendOrderId = orderRes.orderId || orderRes.data?.orderId
-      const amountSubunits = orderRes.amountSubunits || orderRes.data?.amountSubunits
-      const finalAmount = orderRes.amount || orderRes.data?.amount || finalPrice
-      const orderCurrency = orderRes.currency || orderRes.data?.currency || selectedPricing.currency
+      const orderData = orderRes?.data || orderRes
+      const backendKeyId = orderData?.keyId
+      const backendOrderId = orderData?.orderId
+      const amountSubunits = orderData?.amountSubunits
+      const finalAmount = orderData?.amount ?? finalPrice
+      const orderCurrency = orderData?.currency || selectedPricing.currency
 
       if (!backendKeyId) {
-        throw new Error("Razorpay Key ID was not returned by the backend order response.")
+        throw new Error("Razorpay Key ID was not returned by the server.")
       }
 
-      // 2. Release active focus & close Radix Dialog to avoid focus-trap collision with Razorpay iframe
       if (document.activeElement instanceof HTMLElement) {
         document.activeElement.blur()
       }
       handleModalClose()
 
-      // 3. Open official Razorpay modal outside Radix modal scope
       setTimeout(() => {
         openRazorpayCheckout({
           keyId: backendKeyId,
           orderId: backendOrderId,
-          amountSubunits: amountSubunits,
+          amountSubunits,
           amount: finalAmount,
           currency: orderCurrency,
           name: "Japaika",
@@ -409,7 +380,6 @@ export default function ReportPacksModal({
           },
           onSuccess: async (paymentResponse) => {
             try {
-              // 4. Verify signature with real backend & fulfill quota
               const verifyRes = await verifyRazorpayPayment({
                 razorpay_order_id: paymentResponse.razorpay_order_id,
                 razorpay_payment_id: paymentResponse.razorpay_payment_id,
@@ -417,42 +387,19 @@ export default function ReportPacksModal({
                 method: "standard",
               })
 
-              const creditsRemaining = verifyRes.data?.reportCreditsRemaining ?? verifyRes.data?.creditsRemaining
+              const creditsRemaining =
+                verifyRes?.data?.reportCreditsRemaining ??
+                verifyRes?.data?.creditsRemaining
               if (typeof creditsRemaining === "number") {
                 dispatch(setReportQuota(creditsRemaining))
                 dispatch(updateUserProfile({ reportCredits: creditsRemaining }))
               } else {
                 dispatch(addReportQuota(selectedPack.credits))
-                dispatch(updateUserProfile({ reportCredits: (user?.reportCredits || 0) + selectedPack.credits }))
-              }
-
-              // Save local invoice copy
-              try {
-                const existingInvoices = JSON.parse(
-                  localStorage.getItem("japaika_invoices") || "[]"
+                dispatch(
+                  updateUserProfile({
+                    reportCredits: (user?.reportCredits || 0) + selectedPack.credits,
+                  })
                 )
-                const inv = verifyRes.data?.invoice || {
-                  id: "INV-" + Date.now().toString().slice(-6),
-                  paymentId: paymentResponse.razorpay_payment_id,
-                  orderId: paymentResponse.razorpay_order_id,
-                  date: new Date().toISOString(),
-                  currency: orderCurrency,
-                  itemType: "report_pack",
-                  itemTitle: `${selectedPack.name} Report Pack (${selectedPack.credits} reports)`,
-                  subtotal: selectedPricing.originalPrice,
-                  discount: discount,
-                  couponCode: appliedPromo || "NONE",
-                  taxAmount: orderCurrency === "INR" ? Math.round((finalPrice * 18) / 118) : 0,
-                  total: finalPrice,
-                  billingState: orderCurrency === "INR" ? billingState : "International",
-                  status: "PAID",
-                  method: "Razorpay Standard",
-                  userName: user?.name || "Customer",
-                  userEmail: user?.email || "",
-                }
-                localStorage.setItem("japaika_invoices", JSON.stringify([inv, ...existingInvoices]))
-              } catch (e) {
-                console.warn("Failed to save local invoice:", e)
               }
 
               toast.success(
@@ -463,10 +410,9 @@ export default function ReportPacksModal({
               }
               handleModalClose()
             } catch (verifyErr) {
-              console.error("Signature verification failed:", verifyErr)
               toast.error(
                 verifyErr?.response?.data?.message ||
-                "Payment was successful, but server verification failed. Please contact support."
+                  "Payment was successful, but server verification failed. Please contact support."
               )
             }
           },
@@ -489,11 +435,10 @@ export default function ReportPacksModal({
         })
       }, 150)
     } catch (err) {
-      console.error("Order creation failed:", err)
       toast.error(
         err?.response?.data?.message ||
-        err?.message ||
-        "Could not initiate payment gateway. Please try again."
+          err?.message ||
+          "Could not initiate payment gateway. Please try again."
       )
     } finally {
       setIsInitiating(false)
@@ -511,14 +456,11 @@ export default function ReportPacksModal({
           {/* ================= STEP 1: PACK SELECTION ================= */}
           {step === 1 && (
             <div className="flex flex-col h-full max-h-[92vh]">
-              {/* Header with Title and Currency Toggle */}
               <div className="shrink-0 pt-6 sm:pt-7 px-5 sm:px-8 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border/80">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary block font-semibold">
-                      DEEP VEDIC REPORTS
-                    </span>
-                  </div>
+                  <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-primary block font-semibold">
+                    DEEP VEDIC REPORTS
+                  </span>
                   <h2 className="font-serif text-2xl sm:text-[30px] font-normal text-foreground mt-0.5 tracking-tight">
                     Choose a report pack
                   </h2>
@@ -527,7 +469,6 @@ export default function ReportPacksModal({
                   </p>
                 </div>
 
-                {/* Right controls: Currency Pill Switcher & Close Button */}
                 <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
                   <div className="flex items-center bg-accent/40 rounded-full p-1 border border-border/80">
                     {supportedCurrencies.map((curr) => {
@@ -562,9 +503,7 @@ export default function ReportPacksModal({
                 </div>
               </div>
 
-              {/* Main Content Area: Loading, Error, or Loaded Packs */}
               <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6">
-                {/* 1. Loading Skeleton */}
                 {isLoadingPacks && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
                     {[1, 2, 3].map((idx) => (
@@ -597,7 +536,6 @@ export default function ReportPacksModal({
                   </div>
                 )}
 
-                {/* 2. Error State with Retry Button */}
                 {!isLoadingPacks && packsError && (
                   <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center flex flex-col items-center justify-center gap-3">
                     <AlertCircle className="w-8 h-8 text-destructive" />
@@ -606,7 +544,7 @@ export default function ReportPacksModal({
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => loadCatalog()}
+                      onClick={() => loadCatalog(activeCurrency)}
                       className="mt-2 border-border/80 text-foreground hover:bg-accent flex items-center gap-2 cursor-pointer"
                     >
                       <RefreshCw className="w-3.5 h-3.5" />
@@ -615,7 +553,6 @@ export default function ReportPacksModal({
                   </div>
                 )}
 
-                {/* 3. Loaded Packs Grid */}
                 {!isLoadingPacks && !packsError && (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
                     {packs.map((pkg) => {
@@ -625,8 +562,10 @@ export default function ReportPacksModal({
                         selectedPackId === pkg.packDbId
                       const badge = getBadgeForPack(pkg)
                       const pkgPricing = getPackPricing(pkg, activeCurrency)
-                      const unitPriceNum = Number(pkgPricing.offerPrice || 0) / Number(pkg.credits || 1)
-                      const defaultPromo = pkg.defaultPromoCode || getDefaultPromoForPack(pkg.id || pkg.code)
+                      const unitPriceNum =
+                        Number(pkgPricing.offerPrice || 0) / Number(pkg.credits || 1)
+                      const defaultPromo =
+                        pkg.defaultPromoCode || getDefaultPromoForPack(pkg.id || pkg.code)
 
                       return (
                         <div
@@ -638,7 +577,6 @@ export default function ReportPacksModal({
                               : "border-border/80 bg-accent/30 hover:border-primary/50 hover:bg-accent/50"
                           }`}
                         >
-                          {/* Floating Badge (Popular / Best Value) */}
                           {badge && (
                             <span className="absolute -top-3 left-6 bg-primary text-primary-foreground font-bold text-[10px] font-mono uppercase tracking-wider px-3 py-0.5 rounded-full shadow-md">
                               {badge}
@@ -646,7 +584,6 @@ export default function ReportPacksModal({
                           )}
 
                           <div>
-                            {/* Top Row: Tier Name + Radio Circle */}
                             <div className="flex items-center justify-between">
                               <span className="font-mono text-xs uppercase tracking-[0.2em] text-foreground/80 font-semibold">
                                 {pkg.name || pkg.tier}
@@ -662,7 +599,6 @@ export default function ReportPacksModal({
                               </div>
                             </div>
 
-                            {/* Credits Display */}
                             <div className="mt-3.5">
                               <div className="flex items-baseline gap-2">
                                 <span className="font-serif text-4xl sm:text-5xl font-light text-foreground tracking-tight leading-none">
@@ -672,47 +608,27 @@ export default function ReportPacksModal({
                                   {pkg.credits === 1 ? "Deep Report" : "Deep Reports"}
                                 </span>
                               </div>
-                              <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-sans">
-                                {pkg.subtitle ||
-                                  (pkg.credits === 1
-                                    ? "Unlock 1 comprehensive life chapter or birth chart deep-dive"
-                                    : pkg.credits === 2
-                                    ? "Ideal for Kundali deep-dive + Career or Marriage analysis"
-                                    : "Full astrological dossier across all major life pillars")}
-                              </p>
+                              {pkg.subtitle && (
+                                <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 font-sans">
+                                  {pkg.subtitle}
+                                </p>
+                              )}
                             </div>
 
-                            {/* Inclusions list */}
-                            <div className="mt-4 pt-3.5 border-t border-border/80">
-                              <ul className="space-y-1.5 text-xs text-foreground/80">
-                                {Array.isArray(pkg.features) && pkg.features.length > 0 ? (
-                                  pkg.features.map((feat, fIdx) => (
+                            {Array.isArray(pkg.features) && pkg.features.length > 0 && (
+                              <div className="mt-4 pt-3.5 border-t border-border/80">
+                                <ul className="space-y-1.5 text-xs text-foreground/80">
+                                  {pkg.features.map((feat, fIdx) => (
                                     <li key={fIdx} className="flex items-center gap-1.5">
                                       <Check className="w-3.5 h-3.5 text-primary shrink-0" />
                                       <span>{feat}</span>
                                     </li>
-                                  ))
-                                ) : (
-                                  <>
-                                    <li className="flex items-center gap-1.5">
-                                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                                      <span>20+ page structured report</span>
-                                    </li>
-                                    <li className="flex items-center gap-1.5">
-                                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                                      <span>Planetary strengths & dashas</span>
-                                    </li>
-                                    <li className="flex items-center gap-1.5">
-                                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
-                                      <span>Remedies, gemstones & timing</span>
-                                    </li>
-                                  </>
-                                )}
-                              </ul>
-                            </div>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                           </div>
 
-                          {/* Pricing & Promo Code Section */}
                           <div className="mt-5 pt-4 border-t border-border/80">
                             <div className="flex items-baseline gap-2">
                               <span className="font-mono text-2xl sm:text-[28px] font-bold text-foreground tracking-tight">
@@ -743,7 +659,6 @@ export default function ReportPacksModal({
                 )}
               </div>
 
-              {/* Footer Bar */}
               <div className="shrink-0 bg-accent/40 px-5 sm:px-8 py-4 sm:py-5 border-t border-border/80 flex flex-col sm:flex-row items-center justify-between gap-3">
                 <span className="text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground text-center sm:left">
                   SECURE PAYMENT · {selectedPricing.currency === "INR" ? "GST INVOICE" : "TAX INVOICE"} · INSTANT UNLOCK
@@ -757,9 +672,14 @@ export default function ReportPacksModal({
                 >
                   {selectedPack ? (
                     <>
-                      <span>Continue with {selectedPack.credits} {selectedPack.credits === 1 ? "report" : "reports"}</span>
+                      <span>
+                        Continue with {selectedPack.credits}{" "}
+                        {selectedPack.credits === 1 ? "report" : "reports"}
+                      </span>
                       <span className="opacity-40">·</span>
-                      <span>{formatCurrency(selectedPricing.offerPrice, selectedPricing.currency)}</span>
+                      <span>
+                        {formatCurrency(selectedPricing.offerPrice, selectedPricing.currency)}
+                      </span>
                       <span className="text-base">→</span>
                     </>
                   ) : (
@@ -773,7 +693,6 @@ export default function ReportPacksModal({
           {/* ================= STEP 2: PAYMENT SUMMARY ================= */}
           {step === 2 && selectedPack && (
             <div className="flex flex-col h-full max-h-[92vh]">
-              {/* Header with Back button and Step indicator */}
               <div className="shrink-0 pt-6 sm:pt-7 px-5 sm:px-8 pb-4 flex items-center justify-between border-b border-border/80">
                 <div className="flex items-center gap-3.5">
                   <button
@@ -804,10 +723,8 @@ export default function ReportPacksModal({
                 </button>
               </div>
 
-              {/* 2-Column Grid (Scrollable) */}
               <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6">
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8">
-                  {/* Left Column: Pack Review, State, Promo */}
                   <div className="md:col-span-7 space-y-5">
                     {/* 1. YOUR PACK & QUICK SWITCH */}
                     <div>
@@ -868,7 +785,9 @@ export default function ReportPacksModal({
                               <div className="mt-2">
                                 <div className="font-serif text-lg sm:text-xl font-light text-foreground leading-tight">
                                   {pkg.credits}{" "}
-                                  <span className="text-xs font-sans text-muted-foreground">{pkg.credits === 1 ? "Report" : "Reports"}</span>
+                                  <span className="text-xs font-sans text-muted-foreground">
+                                    {pkg.credits === 1 ? "Report" : "Reports"}
+                                  </span>
                                 </div>
                                 <div className="font-mono text-xs text-foreground/90 font-medium mt-1">
                                   {formatCurrency(pPricing.offerPrice, pPricing.currency)}
@@ -880,7 +799,9 @@ export default function ReportPacksModal({
                       </div>
                       <div className="text-[11px] text-muted-foreground mt-2 font-sans flex items-center gap-1.5">
                         <Sparkles className="w-3 h-3 text-primary shrink-0" />
-                        <span>{selectedPack.name} Pack ({selectedPack.credits} reports) · instant AI synthesis · never expires</span>
+                        <span>
+                          {selectedPack.name} Pack ({selectedPack.credits} reports) · instant AI synthesis · never expires
+                        </span>
                       </div>
                     </div>
 
@@ -896,44 +817,76 @@ export default function ReportPacksModal({
                       </div>
 
                       {selectedPricing.currency === "INR" ? (
-                        <div className="relative">
-                          <button
-                            type="button"
-                            onClick={() => setIsStateDropdownOpen(!isStateDropdownOpen)}
-                            className="w-full rounded-2xl border border-border/80 bg-accent/40 px-5 py-3.5 text-sm text-foreground flex items-center justify-between hover:border-primary/50 transition cursor-pointer"
-                          >
-                            <span>{billingState}</span>
-                            <ChevronDown
-                              className={`w-4 h-4 text-muted-foreground transition-transform ${
-                                isStateDropdownOpen ? "rotate-180" : ""
-                              }`}
-                            />
-                          </button>
+                        <Popover
+                          open={isStateDropdownOpen}
+                          onOpenChange={(open) => {
+                            setIsStateDropdownOpen(open)
+                            if (!open) setStateSearch("")
+                          }}
+                        >
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="w-full rounded-2xl border border-border/80 bg-accent/40 px-5 py-3.5 text-sm text-foreground flex items-center justify-between hover:border-primary/50 transition cursor-pointer"
+                            >
+                              <span>{billingState}</span>
+                              <ChevronDown
+                                className={`w-4 h-4 text-muted-foreground transition-transform ${
+                                  isStateDropdownOpen ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+                          </PopoverTrigger>
 
-                          {isStateDropdownOpen && (
-                            <div className="absolute z-40 left-0 right-0 mt-1.5 max-h-52 overflow-y-auto rounded-2xl border border-border/80 bg-card/95 backdrop-blur-2xl p-2 shadow-2xl">
-                              {INDIAN_GST_STATES.map((state) => (
-                                <div
-                                  key={state}
-                                  onClick={() => {
-                                    setBillingState(state)
-                                    setIsStateDropdownOpen(false)
-                                  }}
-                                  className={`px-4 py-2.5 text-xs rounded-xl cursor-pointer transition flex items-center justify-between ${
-                                    billingState === state
-                                      ? "bg-primary/20 text-primary font-semibold"
-                                      : "text-foreground/80 hover:bg-accent hover:text-foreground"
-                                  }`}
-                                >
-                                  <span>{state}</span>
-                                  {billingState === state && (
-                                    <Check className="w-3.5 h-3.5 text-primary" />
-                                  )}
-                                </div>
-                              ))}
+                          <PopoverContent
+                            align="start"
+                            sideOffset={6}
+                            collisionPadding={16}
+                            onWheel={(e) => e.stopPropagation()}
+                            className="w-[var(--radix-popover-trigger-width)] rounded-2xl border border-border/80 bg-popover/95 text-popover-foreground p-2 shadow-2xl backdrop-blur-2xl z-[100]"
+                          >
+                            <div className="relative mb-1.5">
+                              <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                              <input
+                                type="text"
+                                value={stateSearch}
+                                onChange={(e) => setStateSearch(e.target.value)}
+                                placeholder="Search state or UT..."
+                                className="w-full rounded-xl border border-border/70 bg-accent/30 pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                              />
                             </div>
-                          )}
-                        </div>
+
+                            <div className="max-h-52 overflow-y-auto overscroll-contain space-y-0.5 pr-0.5">
+                              {filteredBillingStates.length > 0 ? (
+                                filteredBillingStates.map((state) => (
+                                  <button
+                                    type="button"
+                                    key={state}
+                                    onClick={() => {
+                                      setBillingState(state)
+                                      setIsStateDropdownOpen(false)
+                                      setStateSearch("")
+                                    }}
+                                    className={`w-full px-3.5 py-2 text-xs rounded-xl cursor-pointer transition flex items-center justify-between text-left ${
+                                      billingState === state
+                                        ? "bg-primary/20 text-primary font-semibold"
+                                        : "text-foreground/80 hover:bg-accent hover:text-foreground"
+                                    }`}
+                                  >
+                                    <span>{state}</span>
+                                    {billingState === state && (
+                                      <Check className="w-3.5 h-3.5 text-primary shrink-0" />
+                                    )}
+                                  </button>
+                                ))
+                              ) : (
+                                <div className="px-3.5 py-3 text-xs text-muted-foreground text-center">
+                                  No matching state found
+                                </div>
+                              )}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       ) : (
                         <div className="w-full rounded-2xl border border-border/80 bg-accent/40 px-5 py-3.5 text-sm text-foreground/80 font-mono">
                           International ({selectedPricing.currency}) · GST Exempt
@@ -984,7 +937,7 @@ export default function ReportPacksModal({
                         <div className="flex gap-2">
                           <input
                             type="text"
-                            placeholder="e.g. VAULT"
+                            placeholder="Enter coupon code"
                             value={promoInput}
                             onChange={(e) => setPromoInput(e.target.value)}
                             onKeyDown={(e) => {
@@ -1016,20 +969,31 @@ export default function ReportPacksModal({
 
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center text-foreground/80">
-                          <span>{selectedPack.credits} {selectedPack.credits === 1 ? "Report Credit" : "Report Credits"}</span>
-                          <span className="font-mono">{formatCurrency(subtotal, selectedPricing.currency)}</span>
+                          <span>
+                            {selectedPack.credits}{" "}
+                            {selectedPack.credits === 1 ? "Report Credit" : "Report Credits"}
+                          </span>
+                          <span className="font-mono">
+                            {formatCurrency(subtotal, selectedPricing.currency)}
+                          </span>
                         </div>
 
                         {isPromoApplicable && discount > 0 && (
                           <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
                             <span className="text-xs">{appliedPromo} discount</span>
-                            <span className="font-mono">− {formatCurrency(discount, selectedPricing.currency)}</span>
+                            <span className="font-mono">
+                              − {formatCurrency(discount, selectedPricing.currency)}
+                            </span>
                           </div>
                         )}
 
                         <div className="flex justify-between items-center text-muted-foreground text-xs">
                           <span>Taxes and fees</span>
-                          <span>{selectedPricing.currency === "INR" ? "Included (18% GST)" : "Included (0% Tax)"}</span>
+                          <span>
+                            {selectedPricing.currency === "INR"
+                              ? "Included (18% GST)"
+                              : "Included (0% Tax)"}
+                          </span>
                         </div>
                       </div>
 
@@ -1041,7 +1005,9 @@ export default function ReportPacksModal({
                             TOTAL
                           </span>
                           <span className="text-[10px] text-muted-foreground mt-0.5 block">
-                            {selectedPricing.currency === "INR" ? "GST included" : "All taxes included"}
+                            {selectedPricing.currency === "INR"
+                              ? "GST included"
+                              : "All taxes included"}
                           </span>
                         </div>
                         <div className="font-serif text-3xl sm:text-[40px] font-normal text-foreground tracking-tight">
@@ -1049,7 +1015,6 @@ export default function ReportPacksModal({
                         </div>
                       </div>
 
-                      {/* Proceed to Pay Button */}
                       <div className="pt-2 space-y-2.5">
                         <Button
                           type="button"
@@ -1101,13 +1066,7 @@ export default function ReportPacksModal({
 
             <div className="mt-4 space-y-3 max-h-[300px] overflow-y-auto pr-1">
               {coupons.map((coupon) => {
-                const applicable = getApplicableProducts(coupon)
-                const isApplicable =
-                  applicable.length === 0 ||
-                  (selectedPack &&
-                    (applicable.includes(selectedPack.id) ||
-                      applicable.includes(selectedPack.code) ||
-                      applicable.includes(selectedPack.packDbId)))
+                const isApplicable = doesCouponMatchPack(coupon, selectedPack)
 
                 return (
                   <div
@@ -1137,7 +1096,7 @@ export default function ReportPacksModal({
                         type="button"
                         size="sm"
                         onClick={() => handleApplyPromo(coupon.code)}
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1 h-auto rounded-xl"
+                        className="bg-emerald-500 hover:bg-emerald-400 text-primary-foreground font-semibold text-xs px-3.5 py-1.5 rounded-xl cursor-pointer h-auto"
                       >
                         Apply
                       </Button>

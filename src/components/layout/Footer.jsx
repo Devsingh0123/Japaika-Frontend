@@ -31,7 +31,7 @@ const SOCIAL_LINKS = [
     name: "WhatsApp",
     url: "https://web.whatsapp.com/",
     logo: "/brandLogos/whatsapp.svg",
-    imgClass: "w-4 h-4 object-contain ",
+    imgClass: "w-4 h-4 object-contain",
   },
 ]
 
@@ -39,8 +39,23 @@ export default function Footer() {
   const { isDark, toggleTheme } = useTheme()
 
   return (
-    <footer className="w-full border-t border-border bg-card/70 backdrop-blur-xl text-muted-foreground mt-8 sm:mt-16 transition-colors">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16">
+    <footer className="relative isolate w-full overflow-hidden border-t border-border bg-card text-foreground mt-8 sm:mt-16 transition-colors">
+      {/* Crisp background illustration */}
+      <img
+        src="/footer-bg.webp"
+        alt=""
+        aria-hidden="true"
+        loading="lazy"
+        decoding="async"
+        className="pointer-events-none select-none absolute inset-0 -z-20 w-full h-full object-cover object-[center_70%]"
+      />
+      {/* Subtle top-only gradient so the artwork remains clear and vivid */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-background/70 via-background/20 to-transparent dark:from-background/80 dark:via-background/35 dark:to-background/10"
+      />
+
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 lg:pt-14 pb-6 sm:pb-8 min-h-[380px] sm:min-h-[440px] lg:min-h-[480px] flex flex-col justify-between">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand & Socials Column - Full width on mobile, 1 col on md+ */}
           <div className="col-span-2 md:col-span-1 space-y-4">
@@ -57,7 +72,7 @@ export default function Footer() {
               />
             </Link>
 
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="text-xs text-foreground/85 font-medium leading-relaxed">
               World’s Most Accurate Astrology Engine.
             </p>
 
@@ -71,7 +86,7 @@ export default function Footer() {
                   rel="noreferrer"
                   aria-label={social.name}
                   title={social.name}
-                  className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-accent/40 hover:bg-accent border border-border/60 hover:border-primary/40 transition-all hover:scale-105 cursor-pointer shadow-2xs"
+                  className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-card/85 hover:bg-card border border-border/80 hover:border-primary/50 transition-all hover:scale-105 cursor-pointer shadow-xs backdrop-blur-xs"
                 >
                   <img
                     src={social.logo}
@@ -85,22 +100,22 @@ export default function Footer() {
 
           {/* Company Column - 1 col on mobile and md+ */}
           <div className="col-span-1 space-y-3">
-            <p className="text-xs font-semibold text-foreground font-mono tracking-wider uppercase">
+            <p className="text-xs font-bold text-foreground font-mono tracking-wider uppercase">
               Company
             </p>
-            <ul className="space-y-2.5 text-xs">
+            <ul className="space-y-2.5 text-xs font-medium text-foreground/85">
               <li>
-                <Link to="/jobs" className="hover:text-foreground transition-colors">
+                <Link to="/jobs" className="hover:text-primary transition-colors">
                   Join Us
                 </Link>
               </li>
               <li>
-                <Link to="/review" className="hover:text-foreground transition-colors">
+                <Link to="/review" className="hover:text-primary transition-colors">
                   Add a Review
                 </Link>
               </li>
               <li>
-                <Link to="/contact" className="hover:text-foreground transition-colors">
+                <Link to="/contact" className="hover:text-primary transition-colors">
                   Contact Us
                 </Link>
               </li>
@@ -109,32 +124,32 @@ export default function Footer() {
 
           {/* Help & Legal Column - 1 col on mobile and md+ */}
           <div className="col-span-1 space-y-3">
-            <p className="text-xs font-semibold text-foreground font-mono tracking-wider uppercase">
+            <p className="text-xs font-bold text-foreground font-mono tracking-wider uppercase">
               Help & Legal
             </p>
-            <ul className="space-y-2.5 text-xs">
+            <ul className="space-y-2.5 text-xs font-medium text-foreground/85">
               <li>
-                <Link to="/faq" className="hover:text-foreground transition-colors">
+                <Link to="/faq" className="hover:text-primary transition-colors">
                   FAQs
                 </Link>
               </li>
               <li>
-                <Link to="/privacy-policy" className="hover:text-foreground transition-colors">
+                <Link to="/privacy-policy" className="hover:text-primary transition-colors">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link to="/terms-and-conditions" className="hover:text-foreground transition-colors">
+                <Link to="/terms-and-conditions" className="hover:text-primary transition-colors">
                   Terms & Conditions
                 </Link>
               </li>
               <li>
-                <Link to="/refund-policy" className="hover:text-foreground transition-colors">
+                <Link to="/refund-policy" className="hover:text-primary transition-colors">
                   Refund Policy
                 </Link>
               </li>
               <li>
-                <Link to="/disclaimer" className="hover:text-foreground transition-colors">
+                <Link to="/disclaimer" className="hover:text-primary transition-colors">
                   Disclaimer
                 </Link>
               </li>
@@ -143,7 +158,7 @@ export default function Footer() {
 
           {/* App Downloads Column - Full width on mobile, 1 col on md+ */}
           <div className="col-span-2 md:col-span-1 space-y-3">
-            <p className="text-xs font-semibold text-foreground font-mono tracking-wider uppercase">
+            <p className="text-xs font-bold text-foreground font-mono tracking-wider uppercase">
               Mobile App
             </p>
             <div className="grid grid-cols-2 md:grid-cols-1 gap-2.5 w-full">
@@ -151,7 +166,7 @@ export default function Footer() {
                 href="https://apps.apple.com"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/80 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs group"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/85 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs backdrop-blur-xs group"
               >
                 <img
                   src="/brandLogos/apple.svg"
@@ -170,7 +185,7 @@ export default function Footer() {
                 href="https://play.google.com"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/80 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs group"
+                className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/85 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs backdrop-blur-xs group"
               >
                 <img
                   src="/brandLogos/google-play.svg"
@@ -189,15 +204,15 @@ export default function Footer() {
         </div>
 
         {/* Bottom Copyright & Theme Toggle */}
-        <div className="mt-8 sm:mt-12 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
-          <div className="text-center sm:text-left font-mono">
+        <div className="mt-10 sm:mt-16 pt-4 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-foreground font-medium">
+          <div className="text-center sm:text-left font-mono px-3 py-1 rounded-full bg-card/75 backdrop-blur-xs border border-border/50">
             © 2026 Japaika Technologies Private Limited
           </div>
           <button
             type="button"
             onClick={toggleTheme}
             aria-label="Toggle theme"
-            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-border bg-card/80 hover:bg-card hover:border-primary/50 text-foreground transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md backdrop-blur-md group"
+            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-border bg-card/85 hover:bg-card hover:border-primary/50 text-foreground transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md backdrop-blur-xs group"
           >
             {isDark ? (
               <>

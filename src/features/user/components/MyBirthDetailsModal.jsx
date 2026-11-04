@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
-import { MapPin, Calendar, Clock, Sparkles } from "lucide-react"
+import { MapPin, Calendar, Clock, Sparkles, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import {
   Dialog,
@@ -10,6 +10,11 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog"
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+} from "@/components/ui/popover"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import VedicDatePicker from "@/components/common/VedicDatePicker"
@@ -19,7 +24,7 @@ import { apiClient } from "@/lib/api-client"
 
 export default function MyBirthDetailsModal({ isOpen, onClose }) {
   const dispatch = useDispatch()
-  const { user, birthDetails, isAuthenticated } = useSelector((state) => state.auth || {})
+  const { user, birthDetails, isAuthenticated } = useSelector((state) => state.auth)
 
   const [fullName, setFullName] = useState("")
   const [gender, setGender] = useState("male")
@@ -32,49 +37,37 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
   const [isSearching, setIsSearching] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Initialize form from current birth details or user state
   useEffect(() => {
-    if (isOpen) {
-      const name =
-        birthDetails?.fullName ||
-        birthDetails?.name ||
-        user?.name ||
-        (user?.email ? user.email.split("@")[0] : "")
-      setFullName(name)
+    if (!isOpen) return
 
-      const gen = birthDetails?.gender || user?.gender || "male"
-      setGender(gen.toLowerCase())
+    setFullName(birthDetails?.fullName || user?.name || "")
+    setGender((birthDetails?.gender || user?.gender || "male").toLowerCase())
 
-      const dateStr = birthDetails?.dateOfBirth || birthDetails?.dob || ""
-      setDob(dateStr ? dateStr.split("T")[0] : "")
+    const dateStr = birthDetails?.dateOfBirth || birthDetails?.dob || ""
+    setDob(dateStr ? dateStr.split("T")[0] : "")
 
-      const timeStr = birthDetails?.timeOfBirth || birthDetails?.tob || ""
-      setTob(timeStr ? timeStr.slice(0, 5) : "")
+    const timeStr = birthDetails?.timeOfBirth || birthDetails?.tob || ""
+    setTob(timeStr ? timeStr.slice(0, 5) : "")
+    setIsTimeUnknown(Boolean(birthDetails?.isTimeUnknown))
 
-      setIsTimeUnknown(Boolean(birthDetails?.isTimeUnknown))
+    const city = birthDetails?.birthCity || birthDetails?.city || ""
+    setCityQuery(city)
 
-      const city =
-        birthDetails?.birthCity ||
-        birthDetails?.city ||
-        birthDetails?.place ||
-        ""
-      setCityQuery(city)
-      if (birthDetails?.latitude && birthDetails?.longitude) {
-        setSelectedLocation({
-          city: city,
-          lat: birthDetails.latitude,
-          lng: birthDetails.longitude,
-          timezoneOffset: birthDetails.timezone || 5.5,
-        })
-      } else {
-        setSelectedLocation(null)
-      }
+    if (birthDetails?.latitude != null && birthDetails?.longitude != null) {
+      setSelectedLocation({
+        city,
+        lat: Number(birthDetails.latitude),
+        lng: Number(birthDetails.longitude),
+        timezoneOffset: Number(birthDetails.timezone ?? 5.5),
+      })
+    } else {
+      setSelectedLocation(null)
     }
   }, [isOpen, birthDetails, user])
 
-  // Debounced location search
   useEffect(() => {
-    if (!cityQuery || cityQuery.length < 2 || (selectedLocation && selectedLocation.city === cityQuery)) {
+    const query = cityQuery.trim()
+    if (query.length < 2 || selectedLocation?.city === query) {
       setSuggestions([])
       return
     }
@@ -82,26 +75,12 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
     const timer = setTimeout(async () => {
       try {
         setIsSearching(true)
-        const res = await apiClient.get(
-          `/vedic/location/autocomplete?query=${encodeURIComponent(cityQuery)}`
-        )
-        const list =
-          res.data?.results ||
-          res.data?.data?.results ||
-          res.data?.data?.suggestions ||
-          res.data?.suggestions ||
-          []
-        setSuggestions(list)
+        const res = await apiClient.get("/vedic/location/autocomplete", {
+          params: { query },
+        })
+        setSuggestions(res.data?.data?.results || res.data?.results || [])
       } catch {
-        // Fallback default cities
-        const defaults = [
-          { displayName: "Delhi, India", place: "Delhi", lat: 28.6139, lng: 77.209, timezone: 5.5 },
-          { displayName: "Mumbai, Maharashtra, India", place: "Mumbai", lat: 19.076, lng: 72.8777, timezone: 5.5 },
-          { displayName: "Bengaluru, Karnataka, India", place: "Bengaluru", lat: 12.9716, lng: 77.5946, timezone: 5.5 },
-          { displayName: "New York, NY, USA", place: "New York", lat: 40.7128, lng: -74.006, timezone: -5.0 },
-          { displayName: "London, UK", place: "London", lat: 51.5074, lng: -0.1278, timezone: 0.0 },
-        ].filter((c) => (c.displayName || c.place).toLowerCase().includes(cityQuery.toLowerCase()))
-        setSuggestions(defaults)
+        setSuggestions([])
       } finally {
         setIsSearching(false)
       }
@@ -111,47 +90,53 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
   }, [cityQuery, selectedLocation])
 
   const handleSelectLocation = (item) => {
-    const cityName = item.displayName || item.place || item.city || ""
-    const lat = item.latitude ?? item.lat ?? 28.6139
-    const lng = item.longitude ?? item.lng ?? 77.209
-    const tz = item.timezone ?? item.timezoneOffset ?? 5.5
+    const city = item.displayName || item.place || item.city || ""
     setSelectedLocation({
-      city: cityName,
-      lat,
-      lng,
-      timezoneOffset: tz,
+      city,
+      lat: Number(item.latitude ?? item.lat),
+      lng: Number(item.longitude ?? item.lng),
+      timezoneOffset: Number(item.timezoneOffset ?? item.timezone ?? 5.5),
     })
-    setCityQuery(cityName)
+    setCityQuery(city)
     setSuggestions([])
   }
 
   const handleSave = async () => {
-    if (!fullName.trim()) {
+    const trimmedName = fullName.trim()
+    if (!trimmedName) {
       toast.error("Please provide your full name.")
+      return
+    }
+    if (!dob) {
+      toast.error("Please select your date of birth.")
+      return
+    }
+    if (!selectedLocation?.city || Number.isNaN(selectedLocation.lat) || Number.isNaN(selectedLocation.lng)) {
+      toast.error("Please select a valid place of birth from the suggestions.")
       return
     }
 
     setIsSaving(true)
+    const formattedTime = isTimeUnknown || !tob ? "12:00:00" : `${tob}:00`
+
     const updatedDetails = {
-      fullName: fullName.trim(),
-      name: fullName.trim(),
+      fullName: trimmedName,
+      name: trimmedName,
       gender,
       dateOfBirth: dob,
       dob,
-      timeOfBirth: isTimeUnknown ? "12:00:00" : `${tob}:00`,
-      tob: isTimeUnknown ? "12:00:00" : `${tob}:00`,
+      timeOfBirth: formattedTime,
+      tob: formattedTime,
       isTimeUnknown,
-      birthCity: selectedLocation?.city || cityQuery || "Delhi, India",
-      city: selectedLocation?.city || cityQuery || "Delhi, India",
-      place: selectedLocation?.city || cityQuery || "Delhi, India",
-      latitude: selectedLocation?.lat || 28.6139,
-      longitude: selectedLocation?.lng || 77.209,
-      timezone: selectedLocation?.timezoneOffset || 5.5,
+      birthCity: selectedLocation.city,
+      city: selectedLocation.city,
+      latitude: selectedLocation.lat,
+      longitude: selectedLocation.lng,
+      timezone: selectedLocation.timezoneOffset,
     }
 
     dispatch(updateUserBirthDetails(updatedDetails))
 
-    // If authenticated, sync with backend onboarding endpoint
     if (isAuthenticated) {
       try {
         await apiClient.post("/onboarding", {
@@ -161,20 +146,20 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
           tob: updatedDetails.timeOfBirth,
           isTimeUnknown: updatedDetails.isTimeUnknown,
           location: {
-            city: updatedDetails.birthCity,
-            lat: updatedDetails.latitude,
-            lng: updatedDetails.longitude,
-            timezone: updatedDetails.timezone,
-            timezoneOffset: updatedDetails.timezone,
+            city: selectedLocation.city,
+            lat: selectedLocation.lat,
+            lng: selectedLocation.lng,
+            timezone: selectedLocation.timezoneOffset,
+            timezoneOffset: selectedLocation.timezoneOffset,
           },
         })
       } catch (err) {
-        console.warn("Backend onboarding sync notice:", err.message)
+        console.warn("Failed to sync birth details:", err.message)
       }
     }
 
     setIsSaving(false)
-    toast.success("Birth details updated! Cosmic calculations refreshed.")
+    toast.success("Birth details updated!")
     onClose()
   }
 
@@ -196,18 +181,16 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
         </DialogHeader>
 
         <div className="space-y-4 font-sans text-xs">
-          {/* Full Name */}
           <div className="space-y-1.5">
             <label className="text-muted-foreground font-medium">Full name</label>
             <Input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="e.g. Suraj Kumar"
+              placeholder="Enter your full name"
               className="bg-accent/40 border-border/80 text-foreground placeholder:text-muted-foreground focus-visible:border-primary text-sm h-10 rounded-xl"
             />
           </div>
 
-          {/* Gender Segmented Picker */}
           <div className="space-y-1.5">
             <label className="text-muted-foreground font-medium">Gender</label>
             <div className="grid grid-cols-3 gap-2">
@@ -228,7 +211,6 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Date of Birth & Time of Birth */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <label className="text-muted-foreground font-medium flex items-center gap-1.5 text-xs">
@@ -258,38 +240,51 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          {/* Place of Birth with Autocomplete */}
-          <div className="space-y-1.5 relative">
+          <div className="space-y-1.5">
             <label className="text-muted-foreground font-medium flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-rose-500" />
-              <span>Place of birth</span>
+              <span>Place of birth *</span>
             </label>
-            <div className="relative">
-              <Input
-                value={cityQuery}
-                onChange={(e) => {
-                  setCityQuery(e.target.value)
-                  setSelectedLocation(null)
-                }}
-                placeholder="City, country (e.g. Delhi, India)"
-                className="bg-accent/40 border-border/80 text-foreground placeholder:text-muted-foreground focus-visible:border-primary text-sm h-10 rounded-xl pr-8"
-              />
-              {isSearching && (
-                <div className="absolute right-3 top-2.5 text-muted-foreground animate-spin">
-                  ⏳
-                </div>
-              )}
-            </div>
 
-            {/* Suggestions dropdown */}
-            {suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-[68px] z-50 rounded-2xl border border-border/80 bg-card/95 shadow-2xl p-1.5 space-y-1 max-h-44 overflow-y-auto no-scrollbar backdrop-blur-xl">
+            <Popover
+              open={suggestions.length > 0}
+              onOpenChange={(open) => {
+                if (!open) setSuggestions([])
+              }}
+            >
+              <PopoverAnchor asChild>
+                <div className="relative">
+                  <Input
+                    value={cityQuery}
+                    onChange={(e) => {
+                      setCityQuery(e.target.value)
+                      setSelectedLocation(null)
+                    }}
+                    placeholder="Search city, state, country..."
+                    className="bg-accent/40 border-border/80 text-foreground placeholder:text-muted-foreground focus-visible:border-primary text-sm h-10 rounded-xl pr-9"
+                  />
+                  {isSearching && (
+                    <Loader2 className="w-4 h-4 text-muted-foreground animate-spin absolute right-3 top-3" />
+                  )}
+                </div>
+              </PopoverAnchor>
+
+              <PopoverContent
+                align="start"
+                sideOffset={6}
+                collisionPadding={16}
+                onOpenAutoFocus={(e) => e.preventDefault()}
+                onCloseAutoFocus={(e) => e.preventDefault()}
+                onWheel={(e) => e.stopPropagation()}
+                className="w-[var(--radix-popover-anchor-width)] rounded-2xl border border-border/80 bg-popover text-popover-foreground shadow-2xl p-1.5 space-y-0.5 max-h-48 overflow-y-auto overscroll-contain z-[100]"
+              >
                 {suggestions.map((item, idx) => (
                   <button
                     key={idx}
                     type="button"
+                    onMouseDown={(e) => e.preventDefault()}
                     onClick={() => handleSelectLocation(item)}
-                    className="w-full text-left p-2 rounded-xl hover:bg-accent text-xs text-foreground/90 hover:text-foreground transition-colors cursor-pointer flex items-center gap-2"
+                    className="w-full text-left p-2 rounded-xl hover:bg-accent text-xs text-popover-foreground transition-colors cursor-pointer flex items-center gap-2"
                   >
                     <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
                     <span className="truncate">
@@ -297,12 +292,11 @@ export default function MyBirthDetailsModal({ isOpen, onClose }) {
                     </span>
                   </button>
                 ))}
-              </div>
-            )}
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
 
-        {/* Informational Hint */}
         <p className="text-[11px] text-muted-foreground font-sans leading-relaxed pt-1 border-t border-border/50">
           Don&apos;t know your birth time? Leave it blank, your reading stays approximate.
         </p>
