@@ -30,7 +30,7 @@ const navItems = [
   { label: "Dosha", path: "/dosha", icon: Flame },
   { label: "Calculators", path: "/calculators", icon: Calculator },
   { label: "Reports", path: "/reports", icon: FileText },
-  { label: "Shop", path: "/shop", icon: ShoppingBag },
+  // { label: "Shop", path: "/shop", icon: ShoppingBag },
 ]
 
 function getTimelineBucket(dateInput) {
