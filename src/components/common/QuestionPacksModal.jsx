@@ -96,9 +96,14 @@ function getPrimaryCouponForPack(pkg, coupons) {
 
 function computePackWithCouponPricing(pkg, coupon, activeCurrency = "INR") {
   const basePricing = getPackPricing(pkg, activeCurrency)
-  const subtotal = basePricing.originalPrice
+  const subtotal = Number(basePricing.originalPrice || 0)
   const curr = basePricing.currency
 
+  if (!pkg) {
+    return { currency: curr, subtotal: 0, finalPrice: 0, discountAmount: 0 }
+  }
+
+  // 1. If no coupon is provided or coupon doesn't match this pack
   if (!coupon || !doesCouponMatchPack(coupon, pkg)) {
     return {
       currency: curr,
@@ -108,6 +113,27 @@ function computePackWithCouponPricing(pkg, coupon, activeCurrency = "INR") {
     }
   }
 
+  // 2. If coupon matches this pack's default offer promo code, use the backend pre-calculated offer price
+  const isDefaultPromo =
+    pkg.defaultPromoCode &&
+    String(coupon.code || "").toUpperCase() === String(pkg.defaultPromoCode).toUpperCase()
+
+  if (isDefaultPromo && typeof pkg.offerPrice === "number" && pkg.offerPrice < subtotal) {
+    const finalPrice = Math.max(0, Number(pkg.offerPrice))
+    const discountAmount = Number(
+      (pkg.discountAmount !== undefined && pkg.discountAmount !== null)
+        ? pkg.discountAmount
+        : Math.max(0, subtotal - finalPrice)
+    )
+    return {
+      currency: curr,
+      subtotal,
+      finalPrice,
+      discountAmount: Number(discountAmount.toFixed(2)),
+    }
+  }
+
+  // 3. For other coupons (percentage or flat)
   const discountType = String(coupon.discount_type || "").toLowerCase()
   const discountVal = Number(coupon.discount_value || 0)
   let discount = 0
@@ -115,16 +141,31 @@ function computePackWithCouponPricing(pkg, coupon, activeCurrency = "INR") {
   if (discountType === "percentage" && discountVal > 0) {
     discount = Math.round(subtotal * (discountVal / 100) * 100) / 100
   } else if (discountType === "flat" && discountVal > 0) {
-    // Proportional conversion for USD when flat discount is defined in INR
+    // If USD and flat discount is in INR currency units (e.g. 1600 > subtotal 29.99)
     if (curr === "USD" && discountVal > subtotal) {
-      const inrPrices =
-        pkg?.prices && typeof pkg.prices === "object" ? pkg.prices["INR"] : null
+      const parsedPrices =
+        typeof pkg.prices === "string"
+          ? (() => {
+              try {
+                return JSON.parse(pkg.prices)
+              } catch {
+                return {}
+              }
+            })()
+          : pkg.prices || {}
+      const inrPrices = parsedPrices["INR"] || {}
       const inrBase = Number(inrPrices?.basePrice ?? inrPrices?.originalPrice ?? 0)
-      if (inrBase > 0) {
-        const ratio = Math.min(1, discountVal / inrBase)
+      const fallbackInrBases = { 7: 1399, 12: 2399, 20: 3999, silver: 1399, gold: 2399, diamond: 3999 }
+      const effectiveInrBase = inrBase || fallbackInrBases[pkg.credits] || fallbackInrBases[pkg.tier] || 2399
+
+      if (effectiveInrBase > 0) {
+        const ratio = Math.min(1, discountVal / effectiveInrBase)
         discount = Math.round(subtotal * ratio * 100) / 100
+      } else if (typeof pkg.discountAmount === "number" && pkg.discountAmount > 0) {
+        discount = Math.min(subtotal, pkg.discountAmount)
       } else {
-        discount = Math.min(subtotal, discountVal)
+        const approxUsd = Math.round((discountVal / 80) * 100) / 100
+        discount = Math.min(subtotal, approxUsd)
       }
     } else {
       discount = Math.min(subtotal, discountVal)
@@ -142,12 +183,21 @@ function computePackWithCouponPricing(pkg, coupon, activeCurrency = "INR") {
   }
 }
 
-function formatCouponBadgeText(coupon, currency = "INR") {
+function formatCouponBadgeText(coupon, currency = "INR", discountAmount = null) {
   if (!coupon) return ""
   const type = String(coupon.discount_type || "").toLowerCase()
   const val = Number(coupon.discount_value || 0)
   if (type === "percentage" && val > 0) return `${val}% OFF`
-  if (type === "flat" && val > 0) return `${formatCurrency(val, currency)} OFF`
+  if (type === "flat") {
+    if (typeof discountAmount === "number" && discountAmount > 0) {
+      return `${formatCurrency(discountAmount, currency)} OFF`
+    }
+    if (currency === "USD" && val > 100) {
+      const approxUsd = Math.round(val / 80)
+      return `$${approxUsd} OFF`
+    }
+    if (val > 0) return `${formatCurrency(val, currency)} OFF`
+  }
   return ""
 }
 
@@ -321,14 +371,22 @@ export default function QuestionPacksModal({
     (isServerBreakdownFresh && appliedPromo)
   )
 
+  const effectiveCouponForSelected = useMemo(() => {
+    if (promoRemovedManually) return null
+    if (activeCoupon && selectedPack && doesCouponMatchPack(activeCoupon, selectedPack)) {
+      return activeCoupon
+    }
+    return getPrimaryCouponForPack(selectedPack, questionPackCoupons)
+  }, [promoRemovedManually, activeCoupon, selectedPack, questionPackCoupons])
+
   const computedPricing = useMemo(
     () =>
       computePackWithCouponPricing(
         selectedPack,
-        activeCoupon && doesCouponMatchPack(activeCoupon, selectedPack) ? activeCoupon : null,
+        effectiveCouponForSelected,
         activeCurrency
       ),
-    [selectedPack, activeCoupon, activeCurrency]
+    [selectedPack, effectiveCouponForSelected, activeCurrency]
   )
 
   const subtotal = isServerBreakdownFresh
@@ -798,7 +856,10 @@ export default function QuestionPacksModal({
                             </div>
 
                             <div className="text-xs text-muted-foreground mt-1 font-sans">
-                              {formatCurrency(unitPriceNum, cardPricing.currency)} per question
+                              {cardPricing.currency === "INR"
+                                ? formatCurrency(Math.round(unitPriceNum), cardPricing.currency)
+                                : formatCurrency(unitPriceNum, cardPricing.currency)}{" "}
+                              per question
                             </div>
 
                             {primaryCoupon && (
@@ -813,9 +874,17 @@ export default function QuestionPacksModal({
                                   <Tag className="w-2.5 h-2.5 shrink-0" />
                                   <span>CODE {primaryCoupon.code}</span>
                                 </span>
-                                {formatCouponBadgeText(primaryCoupon, cardPricing.currency) && (
+                                {formatCouponBadgeText(
+                                  primaryCoupon,
+                                  cardPricing.currency,
+                                  cardPricing.discountAmount
+                                ) && (
                                   <span className="text-[10px] font-mono font-semibold text-amber-600 dark:text-amber-400">
-                                    {formatCouponBadgeText(primaryCoupon, cardPricing.currency)}
+                                    {formatCouponBadgeText(
+                                      primaryCoupon,
+                                      cardPricing.currency,
+                                      cardPricing.discountAmount
+                                    )}
                                   </span>
                                 )}
                                 {packCoupons.length > 1 && (
@@ -1094,7 +1163,11 @@ export default function QuestionPacksModal({
                               {(activeCoupon || serverBreakdown) && (
                                 <span className="ml-2 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
                                   ({activeCoupon
-                                    ? formatCouponBadgeText(activeCoupon, selectedPricing.currency)
+                                    ? formatCouponBadgeText(
+                                        activeCoupon,
+                                        selectedPricing.currency,
+                                        discount
+                                      )
                                     : `${formatCurrency(discount, selectedPricing.currency)} OFF`})
                                 </span>
                               )}
@@ -1310,7 +1383,21 @@ export default function QuestionPacksModal({
                         {coupon.code}
                       </span>
                       <span className="text-[10px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                        {formatCouponBadgeText(coupon, selectedPricing.currency)}
+                        {(() => {
+                          const targetPackForCoupon = matchesSelected
+                            ? selectedPack
+                            : (packs.find((p) => doesCouponMatchPack(coupon, p)) || selectedPack)
+                          const couponPreviewPricing = computePackWithCouponPricing(
+                            targetPackForCoupon,
+                            coupon,
+                            selectedPricing.currency
+                          )
+                          return formatCouponBadgeText(
+                            coupon,
+                            selectedPricing.currency,
+                            couponPreviewPricing.discountAmount
+                          )
+                        })()}
                       </span>
                     </div>
                     <p className="text-xs text-foreground/80 mt-1.5 font-medium">
