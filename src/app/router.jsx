@@ -21,6 +21,8 @@ import FaqPage from "@/pages/FaqPage"
 import LegalPage from "@/pages/LegalPage"
 import NotFoundPage from "@/pages/NotFoundPage"
 import ComingSoonPage from "@/pages/ComingSoonPage"
+import DoshasListingPage from "@/pages/DoshasListingPage"
+import DoshaDetailPage from "@/pages/DoshaDetailPage"
 
 function JyotishRedirect() {
   const location = useLocation()
@@ -133,6 +135,22 @@ export const router = createBrowserRouter([
       {
         path: "blog/:slug",
         element: <BlogDetailPage />,
+      },
+      {
+        path: "doshas",
+        element: <DoshasListingPage />,
+      },
+      {
+        path: "dosha",
+        element: <Navigate to="/doshas" replace />,
+      },
+      {
+        path: "doshas/:slug",
+        element: <DoshaDetailPage />,
+      },
+      {
+        path: "dosha/:slug",
+        element: <DoshaDetailPage />,
       },
       {
         path: "invoices",

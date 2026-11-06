@@ -26,7 +26,7 @@ const navItems = [
   { label: "My Kundli", path: "/kundli", icon: Compass },
   { label: "Horoscopes", path: "/horoscope", icon: Orbit },
   { label: "Blogs", path: "/blogs", icon: Newspaper },
-  { label: "Dosha", path: "/dosha", icon: Flame },
+  { label: "Doshas", path: "/doshas", icon: Flame },
   { label: "Calculators", path: "/calculators", icon: Calculator },
   { label: "Reports", path: "/reports", icon: FileText },
   // { label: "Shop", path: "/shop", icon: ShoppingBag },
