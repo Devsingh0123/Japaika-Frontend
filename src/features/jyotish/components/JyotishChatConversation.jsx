@@ -260,6 +260,14 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
         setInFlightQuery("")
         toast.error(err.message || "Failed to consult astrology engine. Please try again.")
         dispatch(stopGenerating())
+        if (err.status === 402 || err.code === "CREDITS_EXHAUSTED") {
+          if (typeof onOpenBuyModal === "function") {
+            onOpenBuyModal({
+              promoCode: err.offer?.promoCode,
+              packId: err.offer?.packId || "pack_gold_12",
+            })
+          }
+        }
       },
     })
   }
@@ -434,8 +442,20 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
 
                         <div className="border-amber-500/20 mt-3.5 border-t pt-3">
                           <div className="flex flex-wrap items-center gap-x-5 gap-y-3 justify-between">
-                            <div className="text-muted-foreground font-mono text-[9px] tracking-[0.16em] uppercase">
-                              Code {reading.offer?.promoCode || "QUICKGOLD"}
+                            <div className="flex items-center gap-2.5">
+                              <span className="text-muted-foreground font-mono text-[9px] tracking-[0.16em] uppercase">
+                                Code {reading.offer?.promoCode || "QUICKGOLD"}
+                              </span>
+                              {reading.offer?.discountedPrice && (
+                                <span className="font-mono text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                                  {reading.offer.discountedPrice}
+                                  {reading.offer?.originalPrice && (
+                                    <span className="text-[10px] text-muted-foreground line-through ml-1.5 font-normal">
+                                      {reading.offer.originalPrice}
+                                    </span>
+                                  )}
+                                </span>
+                              )}
                             </div>
                             <button
                               type="button"
@@ -443,7 +463,7 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
                                 onOpenBuyModal &&
                                 onOpenBuyModal({
                                   promoCode: reading.offer?.promoCode || "QUICKGOLD",
-                                  packId: "pack_gold_12",
+                                  packId: reading.offer?.packId || "pack_gold_12",
                                 })
                               }
                               className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shrink-0 px-5 py-2 text-[13px] font-semibold shadow-md shadow-amber-500/25 transition-all cursor-pointer"

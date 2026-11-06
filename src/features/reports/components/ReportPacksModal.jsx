@@ -238,22 +238,24 @@ export default function ReportPacksModal({
     (c) => c.code?.toUpperCase() === appliedPromo?.trim().toUpperCase()
   )
 
-  const isPromoApplicable = Boolean(
-    activeCoupon && selectedPack && doesCouponMatchPack(activeCoupon, selectedPack)
-  )
-
-  const subtotal = selectedPricing.originalPrice
-  const offerPrice = selectedPricing.offerPrice
-
-  const isServerBreakdownFresh =
+  const isServerBreakdownFresh = Boolean(
     serverBreakdown &&
     (serverBreakdown.packId === selectedPack?.id ||
       serverBreakdown.packId === selectedPack?.code ||
       serverBreakdown.packId === selectedPack?.packDbId) &&
-    serverBreakdown.couponCode === appliedPromo &&
+    String(serverBreakdown.couponCode || "").toUpperCase() === String(appliedPromo || "").toUpperCase() &&
     serverBreakdown.currency === selectedPricing.currency &&
     serverBreakdown.billingState ===
       (selectedPricing.currency === "INR" ? billingState : "International")
+  )
+
+  const isPromoApplicable = Boolean(
+    (activeCoupon && selectedPack && doesCouponMatchPack(activeCoupon, selectedPack)) ||
+    (isServerBreakdownFresh && appliedPromo)
+  )
+
+  const subtotal = selectedPricing.originalPrice
+  const offerPrice = selectedPricing.offerPrice
 
   const discount = isServerBreakdownFresh
     ? serverBreakdown.discountAmount
@@ -264,6 +266,50 @@ export default function ReportPacksModal({
   const finalPrice = isServerBreakdownFresh
     ? serverBreakdown.totalAmount
     : Math.max(0, subtotal - discount)
+
+  useEffect(() => {
+    if (
+      step !== 2 ||
+      !isAuthenticated ||
+      !selectedPack ||
+      !appliedPromo ||
+      isServerBreakdownFresh
+    ) {
+      return
+    }
+
+    let cancelled = false
+
+    validateCoupon({
+      packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+      couponCode: appliedPromo,
+      currency: selectedPricing.currency,
+      billingState:
+        selectedPricing.currency === "INR" ? billingState : "International",
+    })
+      .then((res) => {
+        if (!cancelled && res?.data) {
+          setServerBreakdown(res.data)
+        }
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          console.warn("Could not validate coupon on step 2 for report pack:", err)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    step,
+    isAuthenticated,
+    selectedPack,
+    appliedPromo,
+    selectedPricing.currency,
+    billingState,
+    isServerBreakdownFresh,
+  ])
 
   const handleSelectPack = (pkg) => {
     if (!pkg) return
@@ -282,40 +328,65 @@ export default function ReportPacksModal({
 
   const handleApplyPromo = async (codeToApply) => {
     const code = (codeToApply || promoInput).trim().toUpperCase()
-    if (!code) return
+    if (!code || !selectedPack) return
 
     const matchedCoupon = coupons.find((c) => c.code?.toUpperCase() === code)
-    if (!matchedCoupon) {
-      toast.error(`Invalid coupon code "${code}".`)
-      return
-    }
-
-    if (!doesCouponMatchPack(matchedCoupon, selectedPack)) {
-      toast.error(`Coupon "${code}" is not valid for ${selectedPack.name} Pack.`)
-      return
-    }
-
-    setAppliedPromo(code)
-    setIsPromoInputVisible(false)
-    setIsCouponsModalOpen(false)
-    setPromoInput("")
-    toast.success(`Coupon code ${code} applied successfully!`)
-
-    if (isAuthenticated && selectedPack) {
-      try {
-        const breakdownRes = await validateCoupon({
-          packId: selectedPack.code || selectedPack.id,
-          couponCode: code,
-          currency: selectedPricing.currency,
-          billingState:
-            selectedPricing.currency === "INR" ? billingState : "International",
-        })
-        if (breakdownRes?.data) {
-          setServerBreakdown(breakdownRes.data)
-        }
-      } catch {
-        // Client-side pricing fallback remains active
+    if (matchedCoupon) {
+      if (!doesCouponMatchPack(matchedCoupon, selectedPack)) {
+        toast.error(`Coupon "${code}" is not valid for ${selectedPack.name} Pack.`)
+        return
       }
+
+      setAppliedPromo(code)
+      setServerBreakdown(null)
+      setIsPromoInputVisible(false)
+      setIsCouponsModalOpen(false)
+      setPromoInput("")
+      toast.success(`Coupon code ${code} applied successfully!`)
+
+      if (isAuthenticated && selectedPack) {
+        try {
+          const breakdownRes = await validateCoupon({
+            packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+            couponCode: code,
+            currency: selectedPricing.currency,
+            billingState:
+              selectedPricing.currency === "INR" ? billingState : "International",
+          })
+          if (breakdownRes?.data) {
+            setServerBreakdown(breakdownRes.data)
+          }
+        } catch {
+          // Client-side pricing fallback remains active
+        }
+      }
+      return
+    }
+
+    // Fallback: Validate secret/hidden coupon directly with backend API
+    try {
+      const breakdownRes = await validateCoupon({
+        packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+        couponCode: code,
+        currency: selectedPricing.currency,
+        billingState:
+          selectedPricing.currency === "INR" ? billingState : "International",
+      })
+
+      if (breakdownRes?.data) {
+        setAppliedPromo(code)
+        setServerBreakdown(breakdownRes.data)
+        setIsPromoInputVisible(false)
+        setIsCouponsModalOpen(false)
+        setPromoInput("")
+        toast.success(`Special coupon "${code}" applied successfully!`)
+      } else {
+        toast.error(`Invalid or expired coupon code "${code}".`)
+      }
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || `Invalid or expired coupon code "${code}".`
+      )
     }
   }
 
@@ -341,7 +412,7 @@ export default function ReportPacksModal({
 
     try {
       const orderRes = await createRazorpayOrder({
-        packId: selectedPack.code || selectedPack.id,
+        packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
         itemType: "report_pack",
         currency: selectedPricing.currency,
         couponCode: isPromoApplicable ? appliedPromo : undefined,

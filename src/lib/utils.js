@@ -69,6 +69,8 @@ export function getPackPricing(pkg, currentCurrency = "INR") {
   const original =
     pkg.originalPrice !== undefined && pkg.originalPrice !== null
       ? pkg.originalPrice
+      : nested?.basePrice !== undefined && nested?.basePrice !== null
+      ? nested.basePrice
       : nested?.originalPrice !== undefined && nested?.originalPrice !== null
       ? nested.originalPrice
       : pkg.offerPrice !== undefined && pkg.offerPrice !== null
@@ -80,6 +82,8 @@ export function getPackPricing(pkg, currentCurrency = "INR") {
       ? pkg.offerPrice
       : nested?.offerPrice !== undefined && nested?.offerPrice !== null
       ? nested.offerPrice
+      : nested?.basePrice !== undefined && nested?.basePrice !== null
+      ? nested.basePrice
       : original
 
   return {

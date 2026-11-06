@@ -201,7 +201,14 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
       onError: (err) => {
         toast.error(err.message || "Failed to consult astrology engine. Please try again.")
         dispatch(stopGenerating())
-        if (err.message && err.message.includes("Birth details not found") && typeof onOpenBindModal === "function") {
+        if (err.status === 402 || err.code === "CREDITS_EXHAUSTED") {
+          if (typeof onOpenBuyModal === "function") {
+            onOpenBuyModal({
+              promoCode: err.offer?.promoCode,
+              packId: err.offer?.packId || "pack_gold_12",
+            })
+          }
+        } else if (err.message && err.message.includes("Birth details not found") && typeof onOpenBindModal === "function") {
           onOpenBindModal()
         }
       },

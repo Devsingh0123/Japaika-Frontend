@@ -31,6 +31,15 @@ function JyotishRedirect() {
   return <Navigate to={`/?${searchParams.toString()}`} replace />
 }
 
+function PricingRedirect() {
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
+  if (!searchParams.get("pricing")) {
+    searchParams.set("pricing", "1")
+  }
+  return <Navigate to={`/?${searchParams.toString()}`} replace />
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -68,6 +77,10 @@ export const router = createBrowserRouter([
       {
         path: "jyotish",
         element: <JyotishRedirect />,
+      },
+      {
+        path: "pricing",
+        element: <PricingRedirect />,
       },
       {
         path: "calculators",

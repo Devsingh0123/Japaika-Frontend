@@ -97,36 +97,46 @@ function getPrimaryCouponForPack(pkg, coupons) {
 function computePackWithCouponPricing(pkg, coupon, activeCurrency = "INR") {
   const basePricing = getPackPricing(pkg, activeCurrency)
   const subtotal = basePricing.originalPrice
-  const baseOffer = basePricing.offerPrice
   const curr = basePricing.currency
 
   if (!coupon || !doesCouponMatchPack(coupon, pkg)) {
     return {
       currency: curr,
       subtotal,
-      offerPrice: baseOffer,
-      finalPrice: baseOffer,
-      discountAmount: Math.max(0, Number((subtotal - baseOffer).toFixed(2))),
+      finalPrice: subtotal,
+      discountAmount: 0,
     }
   }
 
-  let finalTotal = baseOffer
-  const discountType = String(coupon.discount_type || "pack_offer").toLowerCase()
+  const discountType = String(coupon.discount_type || "").toLowerCase()
   const discountVal = Number(coupon.discount_value || 0)
+  let discount = 0
 
   if (discountType === "percentage" && discountVal > 0) {
-    finalTotal = Number((baseOffer * (1 - Math.min(100, discountVal) / 100)).toFixed(2))
+    discount = Math.round(subtotal * (discountVal / 100) * 100) / 100
   } else if (discountType === "flat" && discountVal > 0) {
-    finalTotal = Math.max(0, Number((baseOffer - discountVal).toFixed(2)))
+    // Proportional conversion for USD when flat discount is defined in INR
+    if (curr === "USD" && discountVal > subtotal) {
+      const inrPrices =
+        pkg?.prices && typeof pkg.prices === "object" ? pkg.prices["INR"] : null
+      const inrBase = Number(inrPrices?.basePrice ?? inrPrices?.originalPrice ?? 0)
+      if (inrBase > 0) {
+        const ratio = Math.min(1, discountVal / inrBase)
+        discount = Math.round(subtotal * ratio * 100) / 100
+      } else {
+        discount = Math.min(subtotal, discountVal)
+      }
+    } else {
+      discount = Math.min(subtotal, discountVal)
+    }
   }
 
-  const effectiveSubtotal = Math.max(subtotal, baseOffer)
-  const discountAmount = Math.max(0, Number((effectiveSubtotal - finalTotal).toFixed(2)))
+  const finalTotal = Math.max(0, Math.round((subtotal - discount) * 100) / 100)
+  const discountAmount = Math.max(0, Math.round((subtotal - finalTotal) * 100) / 100)
 
   return {
     currency: curr,
-    subtotal: effectiveSubtotal,
-    offerPrice: baseOffer,
+    subtotal,
     finalPrice: finalTotal,
     discountAmount,
   }
@@ -134,11 +144,11 @@ function computePackWithCouponPricing(pkg, coupon, activeCurrency = "INR") {
 
 function formatCouponBadgeText(coupon, currency = "INR") {
   if (!coupon) return ""
-  const type = String(coupon.discount_type || "pack_offer").toLowerCase()
+  const type = String(coupon.discount_type || "").toLowerCase()
   const val = Number(coupon.discount_value || 0)
   if (type === "percentage" && val > 0) return `${val}% OFF`
   if (type === "flat" && val > 0) return `${formatCurrency(val, currency)} OFF`
-  return "SPECIAL OFFER"
+  return ""
 }
 
 export default function QuestionPacksModal({
@@ -295,29 +305,30 @@ export default function QuestionPacksModal({
     [questionPackCoupons, appliedPromo]
   )
 
+  const isServerBreakdownFresh = Boolean(
+    serverBreakdown &&
+      selectedPack &&
+      isPackMatch(selectedPack, serverBreakdown.packId) &&
+      String(serverBreakdown.couponCode || "").toUpperCase() ===
+        String(appliedPromo || "").toUpperCase() &&
+      serverBreakdown.currency === selectedPricing.currency &&
+      serverBreakdown.billingState ===
+        (selectedPricing.currency === "INR" ? billingState : "International")
+  )
+
   const isPromoApplicable = Boolean(
-    activeCoupon && selectedPack && doesCouponMatchPack(activeCoupon, selectedPack)
+    (activeCoupon && selectedPack && doesCouponMatchPack(activeCoupon, selectedPack)) ||
+    (isServerBreakdownFresh && appliedPromo)
   )
 
   const computedPricing = useMemo(
     () =>
       computePackWithCouponPricing(
         selectedPack,
-        isPromoApplicable ? activeCoupon : null,
+        activeCoupon && doesCouponMatchPack(activeCoupon, selectedPack) ? activeCoupon : null,
         activeCurrency
       ),
-    [selectedPack, isPromoApplicable, activeCoupon, activeCurrency]
-  )
-
-  const isServerBreakdownFresh = Boolean(
-    serverBreakdown &&
-      selectedPack &&
-      isPackMatch(selectedPack, serverBreakdown.packId) &&
-      String(serverBreakdown.couponCode || "").toUpperCase() ===
-        String(isPromoApplicable ? appliedPromo : "").toUpperCase() &&
-      serverBreakdown.currency === selectedPricing.currency &&
-      serverBreakdown.billingState ===
-        (selectedPricing.currency === "INR" ? billingState : "International")
+    [selectedPack, activeCoupon, activeCurrency]
   )
 
   const subtotal = isServerBreakdownFresh
@@ -337,7 +348,6 @@ export default function QuestionPacksModal({
       step !== 2 ||
       !isAuthenticated ||
       !selectedPack ||
-      !isPromoApplicable ||
       !appliedPromo ||
       isServerBreakdownFresh
     ) {
@@ -358,7 +368,11 @@ export default function QuestionPacksModal({
           setServerBreakdown(res.data)
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (!cancelled) {
+          console.warn("Could not validate coupon on step 2:", err)
+        }
+      })
 
     return () => {
       cancelled = true
@@ -367,7 +381,6 @@ export default function QuestionPacksModal({
     step,
     isAuthenticated,
     selectedPack,
-    isPromoApplicable,
     appliedPromo,
     selectedPricing.currency,
     billingState,
@@ -406,45 +419,71 @@ export default function QuestionPacksModal({
     const code = (codeToApply || promoInput).trim().toUpperCase()
     if (!code) return
 
-    const matchedCoupon = questionPackCoupons.find(
-      (c) => c.code?.toUpperCase() === code
-    )
-    if (!matchedCoupon) {
-      toast.error(`Invalid or expired coupon code "${code}".`)
-      return
-    }
-
     const packToValidate = targetPackOverride || selectedPack
     if (!packToValidate) return
 
-    if (!doesCouponMatchPack(matchedCoupon, packToValidate)) {
-      toast.error(`Coupon "${code}" is not valid for ${packToValidate.name} Pack.`)
+    const matchedCoupon = questionPackCoupons.find(
+      (c) => c.code?.toUpperCase() === code
+    )
+
+    if (matchedCoupon) {
+      if (!doesCouponMatchPack(matchedCoupon, packToValidate)) {
+        toast.error(`Coupon "${code}" is not valid for ${packToValidate.name} Pack.`)
+        return
+      }
+
+      setPromoRemovedManually(false)
+      setAppliedPromo(code)
+      setServerBreakdown(null)
+      setIsPromoInputVisible(false)
+      setIsCouponsModalOpen(false)
+      setPromoInput("")
+      toast.success(`Coupon code ${code} applied to ${packToValidate.name} Pack!`)
+
+      if (isAuthenticated) {
+        try {
+          const breakdownRes = await validateCoupon({
+            packId: packToValidate.code || packToValidate.id,
+            couponCode: code,
+            currency: selectedPricing.currency,
+            billingState:
+              selectedPricing.currency === "INR" ? billingState : "International",
+          })
+          if (breakdownRes?.data) {
+            setServerBreakdown(breakdownRes.data)
+          }
+        } catch {
+          // Client-side pricing remains active
+        }
+      }
       return
     }
 
-    setPromoRemovedManually(false)
-    setAppliedPromo(code)
-    setServerBreakdown(null)
-    setIsPromoInputVisible(false)
-    setIsCouponsModalOpen(false)
-    setPromoInput("")
-    toast.success(`Coupon code ${code} applied to ${packToValidate.name} Pack!`)
+    // Fallback: Validate secret/hidden coupon directly with backend API
+    try {
+      const breakdownRes = await validateCoupon({
+        packId: packToValidate.code || packToValidate.id,
+        couponCode: code,
+        currency: selectedPricing.currency,
+        billingState:
+          selectedPricing.currency === "INR" ? billingState : "International",
+      })
 
-    if (isAuthenticated) {
-      try {
-        const breakdownRes = await validateCoupon({
-          packId: packToValidate.code || packToValidate.id,
-          couponCode: code,
-          currency: selectedPricing.currency,
-          billingState:
-            selectedPricing.currency === "INR" ? billingState : "International",
-        })
-        if (breakdownRes?.data) {
-          setServerBreakdown(breakdownRes.data)
-        }
-      } catch {
-        // Client-side pricing remains active
+      if (breakdownRes?.data) {
+        setPromoRemovedManually(false)
+        setAppliedPromo(code)
+        setServerBreakdown(breakdownRes.data)
+        setIsPromoInputVisible(false)
+        setIsCouponsModalOpen(false)
+        setPromoInput("")
+        toast.success(`Special coupon "${code}" applied to ${packToValidate.name} Pack!`)
+      } else {
+        toast.error(`Invalid or expired coupon code "${code}".`)
       }
+    } catch (err) {
+      toast.error(
+        err?.response?.data?.message || `Invalid or expired coupon code "${code}".`
+      )
     }
   }
 
@@ -774,7 +813,7 @@ export default function QuestionPacksModal({
                                   <Tag className="w-2.5 h-2.5 shrink-0" />
                                   <span>CODE {primaryCoupon.code}</span>
                                 </span>
-                                {primaryCoupon.discount_type !== "pack_offer" && (
+                                {formatCouponBadgeText(primaryCoupon, cardPricing.currency) && (
                                   <span className="text-[10px] font-mono font-semibold text-amber-600 dark:text-amber-400">
                                     {formatCouponBadgeText(primaryCoupon, cardPricing.currency)}
                                   </span>
@@ -1052,12 +1091,13 @@ export default function QuestionPacksModal({
                               <span className="text-foreground font-mono font-semibold tracking-wider">
                                 {appliedPromo}
                               </span>
-                              {activeCoupon?.discount_type &&
-                                activeCoupon.discount_type !== "pack_offer" && (
-                                  <span className="ml-2 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
-                                    ({formatCouponBadgeText(activeCoupon, selectedPricing.currency)})
-                                  </span>
-                                )}
+                              {(activeCoupon || serverBreakdown) && (
+                                <span className="ml-2 text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                                  ({activeCoupon
+                                    ? formatCouponBadgeText(activeCoupon, selectedPricing.currency)
+                                    : `${formatCurrency(discount, selectedPricing.currency)} OFF`})
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
@@ -1172,15 +1212,6 @@ export default function QuestionPacksModal({
                             {discount > 0
                               ? `− ${formatCurrency(discount, selectedPricing.currency)}`
                               : "Active"}
-                          </span>
-                        </div>
-                      )}
-
-                      {!isPromoApplicable && discount > 0 && (
-                        <div className="flex justify-between items-center text-muted-foreground">
-                          <span className="text-xs">Pack offer savings</span>
-                          <span className="font-mono">
-                            − {formatCurrency(discount, selectedPricing.currency)}
                           </span>
                         </div>
                       )}

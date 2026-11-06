@@ -53,13 +53,21 @@ export async function streamChatTurn({
 
     if (!response.ok) {
       let errMessage = `Chat request failed with status ${response.status}`
+      let errData = null
       try {
         const errJson = await response.json()
         if (errJson?.message) errMessage = errJson.message
+        if (errJson?.data) errData = errJson.data
       } catch {
         // use default message
       }
-      throw new Error(errMessage)
+      const err = new Error(errMessage)
+      err.status = response.status
+      if (errData) {
+        err.code = errData.code
+        err.offer = errData.offer
+      }
+      throw err
     }
 
     // Handle Server-Sent Events reader

@@ -66,6 +66,24 @@ export default function RootLayout() {
     }
   }, [isAuthenticated, user, user?.onboardingCompleted, location.pathname, navigate, dispatch])
 
+  // Handle shared promotion link or direct pricing URL (e.g. ?coupon=CODE or ?promo=CODE or ?pricing=1)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const promoCode = searchParams.get("coupon") || searchParams.get("promo")
+    const isPricing = searchParams.get("pricing")
+
+    if (promoCode || isPricing) {
+      handleOpenBuyModal({ promoCode: promoCode ? promoCode.trim().toUpperCase() : undefined })
+
+      searchParams.delete("coupon")
+      searchParams.delete("promo")
+      searchParams.delete("pricing")
+      const remainingSearch = searchParams.toString()
+      const newUrl = `${location.pathname}${remainingSearch ? `?${remainingSearch}` : ""}`
+      navigate(newUrl, { replace: true })
+    }
+  }, [location.pathname, location.search, navigate])
+
   const handleOpenAuth = (actionCallback) => {
     if (isAuthenticated) {
       if (typeof actionCallback === "function") {
