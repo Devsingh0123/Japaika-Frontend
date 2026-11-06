@@ -162,10 +162,9 @@ export default function Footer() {
               Mobile App
             </p>
             <div className="grid grid-cols-2 md:grid-cols-1 gap-2.5 w-full">
-              <a
-                href="https://apps.apple.com"
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                to="/coming-soon"
+               
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/85 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs backdrop-blur-xs group"
               >
                 <img
@@ -179,12 +178,10 @@ export default function Footer() {
                   </span>
                   <span className="font-semibold text-xs">App Store</span>
                 </div>
-              </a>
+              </Link>
 
-              <a
-                href="https://play.google.com"
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                to="/coming-soon"
                 className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-card/85 hover:bg-card border border-border/80 hover:border-primary/40 text-foreground transition-all shadow-xs backdrop-blur-xs group"
               >
                 <img
@@ -198,7 +195,7 @@ export default function Footer() {
                   </span>
                   <span className="font-semibold text-xs">Play Store</span>
                 </div>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
