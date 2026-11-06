@@ -17,7 +17,6 @@ import {
   Dialog,
   DialogContent,
 } from "@/components/ui/dialog"
-import Footer from "@/components/layout/Footer"
 import { fetchUserInvoices } from "@/features/billing"
 import { formatCurrency, normalizeCurrency } from "@/lib/utils"
 
@@ -588,7 +587,6 @@ export default function InvoicesPage() {
         </Dialog>
       )}
 
-      <Footer />
     </div>
   )
 }

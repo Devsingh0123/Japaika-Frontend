@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { openAuthModal } from "@/features/auth"
 import UserProfileMenu from "@/features/user/components/UserProfileMenu"
-import { setActiveConversation, setActiveThreadId, deleteConversation } from "@/features/jyotish"
+import { setActiveConversation, setActiveThreadId, deleteConversation, clearActiveConversation } from "@/features/jyotish"
 import { fetchUserThreads, fetchThreadById, deleteThread } from "@/features/jyotish/jyotishApi"
 import { isToday, isYesterday, differenceInCalendarDays, format } from "date-fns"
 
@@ -80,7 +80,11 @@ export default function MobileHeader({
           <Menu className="size-7 stroke-[2]" />
         </Button>
 
-        <Link to="/" className="flex items-center gap-2 group">
+        <Link
+          to="/"
+          onClick={() => dispatch(clearActiveConversation())}
+          className="flex items-center gap-2 group"
+        >
           <img
             src="/japaikaLogo.svg"
             alt=""
@@ -126,18 +130,25 @@ export default function MobileHeader({
           <div className="relative w-[310px] max-w-[86%] bg-card/95 backdrop-blur-2xl border-r border-border p-4 flex flex-col h-full z-10 shadow-2xl animate-in slide-in-from-left duration-200">
             <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar pr-0.5">
               <div className="flex items-center justify-between pb-3 border-b border-border">
-                <div className="flex items-center gap-2.5">
+                <Link
+                  to="/"
+                  onClick={() => {
+                    setIsOpen(false)
+                    dispatch(clearActiveConversation())
+                  }}
+                  className="flex items-center gap-2.5 group"
+                >
                   <img
                     src="/japaikaLogo.svg"
                     alt=""
-                    className="w-9 h-9 object-contain shrink-0"
+                    className="w-9 h-9 object-contain shrink-0 group-hover:scale-105 transition-transform"
                   />
                   <img
                     src="/japaikaName.svg"
                     alt="Japaika"
                     className="h-6 w-auto object-contain select-none"
                   />
-                </div>
+                </Link>
                 <Button
                   variant="ghost"
                   size="icon"

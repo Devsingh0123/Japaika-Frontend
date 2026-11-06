@@ -5,7 +5,6 @@ import { motion } from "framer-motion"
 import { FileText, ArrowRight, Unlock, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { fetchReportsCatalog, fetchMyReports } from "@/features/reports"
-import Footer from "@/components/layout/Footer"
 
 export default function ReportsListingPage() {
   const dispatch = useDispatch()
@@ -185,7 +184,6 @@ export default function ReportsListingPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   )
 }

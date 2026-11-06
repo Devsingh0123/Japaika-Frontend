@@ -3,6 +3,7 @@ import { Outlet, ScrollRestoration, useNavigate, useLocation } from "react-route
 import { useDispatch, useSelector } from "react-redux"
 import Sidebar from "@/components/layout/Sidebar"
 import MobileHeader from "@/components/layout/MobileHeader"
+import Footer from "@/components/layout/Footer"
 import AuthModal from "@/features/auth/AuthModal"
 import QuestionPacksModal from "@/components/common/QuestionPacksModal"
 import ReportPacksModal from "@/features/reports/components/ReportPacksModal"
@@ -22,6 +23,13 @@ export default function RootLayout() {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, user, isAuthModalOpen } = useSelector((state) => state.auth || {})
+  const { activeConversationId, activeThreadId, isGenerating } = useSelector((state) => state.jyotish || {})
+
+  const isChatActive =
+    location.pathname === "/" &&
+    Boolean(activeConversationId || activeThreadId || isGenerating)
+  const isExcludedRoute = location.pathname === "/onboarding"
+  const shouldShowFooter = !isChatActive && !isExcludedRoute
 
   const handleOpenBuyModal = (options) => {
     setBuyModalOptions(options || null)
@@ -130,18 +138,21 @@ export default function RootLayout() {
           onOpenBuyReportsModal={() => handleOpenBuyReportsModal()}
         />
 
-        {/* Dynamic Page Outlet */}
+        {/* Dynamic Page Outlet with Centralized Sticky Footer */}
         <main className="flex-1 flex flex-col min-h-0 relative overflow-y-auto">
-          <Outlet
-            context={{
-              onOpenBindModal: handleOpenAuth,
-              onOpenAuthModal: handleOpenAuth,
-              onOpenBuyModal: handleOpenBuyModal,
-              onOpenBuyQuestionsModal: handleOpenBuyModal,
-              onOpenBuyReportsModal: handleOpenBuyReportsModal,
-              onOpenBirthDetailsModal: () => setIsBirthDetailsModalOpen(true),
-            }}
-          />
+          <div className="flex-1 flex flex-col">
+            <Outlet
+              context={{
+                onOpenBindModal: handleOpenAuth,
+                onOpenAuthModal: handleOpenAuth,
+                onOpenBuyModal: handleOpenBuyModal,
+                onOpenBuyQuestionsModal: handleOpenBuyModal,
+                onOpenBuyReportsModal: handleOpenBuyReportsModal,
+                onOpenBirthDetailsModal: () => setIsBirthDetailsModalOpen(true),
+              }}
+            />
+          </div>
+          {shouldShowFooter && <Footer />}
         </main>
       </div>
 

@@ -10,7 +10,6 @@ import {
   setSearchQuery,
   ElementGroupSection,
 } from "@/features/horoscope"
-import Footer from "@/components/layout/Footer"
 
 const TIMEFRAMES = [
   { id: "Daily", label: "Daily" },
@@ -177,8 +176,6 @@ export default function HoroscopesListingPage() {
         </div>
       </div>
 
-      {/* Global Footer */}
-      <Footer />
     </div>
   )
 }

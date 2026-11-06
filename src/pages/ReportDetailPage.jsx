@@ -18,7 +18,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import Footer from "@/components/layout/Footer"
 import ReportPacksModal from "@/features/reports/components/ReportPacksModal"
 import { REPORTS_CATALOG } from "@/features/reports/reportsData"
 import {
@@ -715,7 +714,6 @@ export default function ReportDetailPage() {
         }}
       />
 
-      <Footer />
     </div>
   )
 }

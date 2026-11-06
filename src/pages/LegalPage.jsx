@@ -30,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import Footer from "@/components/layout/Footer";
 
 const SLUG_ICON_MAP = {
   "privacy-policy": ShieldCheck,
@@ -565,7 +564,6 @@ export default function LegalPage({ defaultSlug }) {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }

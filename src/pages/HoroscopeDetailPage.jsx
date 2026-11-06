@@ -5,7 +5,6 @@ import { motion } from "framer-motion"
 import { Helmet } from "react-helmet-async"
 import { RefreshCw, AlertCircle } from "lucide-react"
 
-import Footer from "@/components/layout/Footer"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -190,8 +189,6 @@ export default function HoroscopeDetailPage() {
         )}
       </div>
 
-      {/* Global Footer */}
-      <Footer />
     </div>
   )
 }

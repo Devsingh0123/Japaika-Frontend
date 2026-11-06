@@ -4,7 +4,6 @@ import { useSelector } from "react-redux"
 import { motion, AnimatePresence } from "framer-motion"
 import HeroChatInput from "@/components/sections/HeroChatInput"
 import JyotishChatConversation from "@/features/jyotish/components/JyotishChatConversation"
-import Footer from "@/components/layout/Footer"
 
 export default function HomePage() {
   const context = useOutletContext() || {}
@@ -62,8 +61,6 @@ export default function HomePage() {
               />
             </div>
 
-            {/* Seamless Landing Footer */}
-            <Footer />
           </motion.div>
         )}
       </AnimatePresence>

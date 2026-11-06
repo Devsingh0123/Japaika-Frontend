@@ -40,7 +40,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import Footer from "@/components/layout/Footer";
 
 const CATEGORY_ICON_MAP = {
   all: Sparkles,
@@ -555,7 +554,6 @@ export default function FaqPage() {
         </section>
       </div>
 
-      <Footer />
     </div>
   );
 }

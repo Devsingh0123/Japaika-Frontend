@@ -25,7 +25,6 @@ import PlanetaryTable from "@/features/calculators/components/PlanetaryTable";
 import HouseAnalysis from "@/features/calculators/components/HouseAnalysis";
 import DashaTimeline from "@/features/calculators/components/DashaTimeline";
 import AskJyotishPromptCard from "@/features/calculators/components/AskJyotishPromptCard";
-import Footer from "@/components/layout/Footer";
 
 import { fetchUserChart } from "@/features/calculators";
 
@@ -596,8 +595,6 @@ export default function KundliDisplayPage() {
         )}
       </div>
 
-      {/* Global Footer */}
-      <Footer />
     </div>
   );
 }

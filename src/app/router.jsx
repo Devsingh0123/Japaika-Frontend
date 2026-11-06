@@ -20,7 +20,7 @@ import ContactPage from "@/pages/ContactPage"
 import FaqPage from "@/pages/FaqPage"
 import LegalPage from "@/pages/LegalPage"
 import NotFoundPage from "@/pages/NotFoundPage"
-import CommingSoonPage from "@/pages/CommingSoonPage"
+import ComingSoonPage from "@/pages/ComingSoonPage"
 
 function JyotishRedirect() {
   const location = useLocation()
@@ -194,12 +194,12 @@ export const router = createBrowserRouter([
         element: <LegalPage />,
       },
       {
-        path: "*",
-        element: <NotFoundPage />,
+        path: "coming-soon",
+        element: <ComingSoonPage />,
       },
       {
-        path: "coming-soon",
-        element: <CommingSoonPage />,
+        path: "*",
+        element: <NotFoundPage />,
       },
     ],
   },

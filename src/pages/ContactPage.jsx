@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import Footer from "@/components/layout/Footer";
 
 const SUPPORT_EMAIL = "support@japaika.com";
 
@@ -114,7 +113,6 @@ export default function ContactPage() {
         </Card>
       </div>
 
-      <Footer />
     </div>
   );
 }

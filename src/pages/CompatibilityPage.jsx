@@ -4,7 +4,6 @@ import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle } from "lucide-react";
 
-import Footer from "@/components/layout/Footer";
 import DualBirthForm from "@/features/compatibility/components/DualBirthForm";
 import MatchScoreOverviewCard from "@/features/compatibility/components/MatchScoreOverviewCard";
 import AshtakootBreakdownTable from "@/features/compatibility/components/AshtakootBreakdownTable";
@@ -131,8 +130,6 @@ export default function CompatibilityPage() {
         </AnimatePresence>
       </div>
 
-      {/* Page Footer */}
-      <Footer />
     </div>
   );
 }

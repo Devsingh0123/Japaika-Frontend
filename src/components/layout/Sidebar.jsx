@@ -13,12 +13,11 @@ import {
   Compass,
   Trash2,
   Flame,
-  ShoppingBag,
   SunMedium,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { openAuthModal } from "@/features/auth"
-import { setActiveConversation, setActiveThreadId, deleteConversation } from "@/features/jyotish"
+import { setActiveConversation, setActiveThreadId, deleteConversation, clearActiveConversation } from "@/features/jyotish"
 import { fetchUserThreads, fetchThreadById, deleteThread } from "@/features/jyotish/jyotishApi"
 import UserProfileMenu from "@/features/user/components/UserProfileMenu"
 import { isToday, isYesterday, differenceInCalendarDays, format } from "date-fns"
@@ -78,7 +77,7 @@ export default function Sidebar({
       <div className="flex flex-col h-full overflow-y-auto no-scrollbar p-3 space-y-4">
         {/* Brand & Collapse Header */}
         {isCollapsed ? (
-          <div className="flex items-center justify-center pb-1">
+          <div className="flex flex-col items-center justify-center gap-2 pb-1">
             <Button
               variant="ghost"
               size="icon"
@@ -89,11 +88,24 @@ export default function Sidebar({
             >
               <PanelLeftOpen className="size-6 stroke-[1.8]" />
             </Button>
+            <Link
+              to="/"
+              onClick={() => dispatch(clearActiveConversation())}
+              className="flex items-center justify-center p-1 rounded-xl hover:bg-accent/80 transition-all group"
+              title="Japaika Home"
+            >
+              <img
+                src="/japaikaLogo.svg"
+                alt="Japaika"
+                className="w-8 h-8 object-contain shrink-0 group-hover:scale-105 transition-transform"
+              />
+            </Link>
           </div>
         ) : (
           <div className="flex items-center justify-between pb-1 px-1">
             <Link
               to="/"
+              onClick={() => dispatch(clearActiveConversation())}
               className="flex items-center gap-2.5 shrink-0 group"
               title="Japaika"
             >

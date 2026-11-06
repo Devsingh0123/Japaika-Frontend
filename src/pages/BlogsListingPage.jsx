@@ -19,7 +19,6 @@ import BlogSkeleton from "@/features/blogs/components/BlogSkeleton";
 import BlogCategoryPills from "@/features/blogs/components/BlogCategoryPills";
 import BlogSearchBar from "@/features/blogs/components/BlogSearchBar";
 import FeaturedBlogHero from "@/features/blogs/components/FeaturedBlogHero";
-import Footer from "@/components/layout/Footer";
 
 export default function BlogsListingPage() {
   const dispatch = useDispatch();
@@ -322,8 +321,6 @@ export default function BlogsListingPage() {
         )}
       </div>
 
-      {/* Global Footer */}
-      <Footer />
     </div>
   );
 }

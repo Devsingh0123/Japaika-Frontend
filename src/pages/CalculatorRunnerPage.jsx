@@ -5,7 +5,6 @@ import { Helmet } from "react-helmet-async";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, Sparkles, ArrowRight } from "lucide-react";
 
-import Footer from "@/components/layout/Footer";
 import BirthDetailsForm from "@/features/calculators/components/BirthDetailsForm";
 import CalculatorHeader from "@/features/calculators/components/CalculatorHeader";
 import CalculatorFaqSection from "@/features/calculators/components/CalculatorFaqSection";
@@ -305,7 +304,6 @@ export default function CalculatorRunnerPage() {
     </div>
   </div>
 
-  <Footer />
 </div>
   );
 }

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Search } from "lucide-react";
 import { ALL_CALCULATORS, CalculatorCard } from "@/features/calculators/components/RelatedCalculatorsGrid";
-import Footer from "@/components/layout/Footer";
 
 const CATEGORIES = [
   { name: "All", count: 12 },
@@ -115,8 +114,6 @@ export default function CalculatorsListingPage() {
         )}
       </div>
 
-      {/* Global Footer */}
-      <Footer />
     </div>
   );
 }

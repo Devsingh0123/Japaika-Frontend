@@ -14,7 +14,6 @@ import HouseAnalysis from "@/features/calculators/components/HouseAnalysis";
 import DashaTimeline from "@/features/calculators/components/DashaTimeline";
 import CalculatorFaqSection from "@/features/calculators/components/CalculatorFaqSection";
 import RelatedCalculatorsGrid from "@/features/calculators/components/RelatedCalculatorsGrid";
-import Footer from "@/components/layout/Footer";
 
 import { calculateKundli } from "@/features/calculators";
 
@@ -337,8 +336,6 @@ export default function FreeKundliPage() {
         </div>
       </div>
 
-      {/* Global Footer */}
-      <Footer />
     </div>
   );
 }

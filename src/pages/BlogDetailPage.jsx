@@ -18,7 +18,6 @@ import BlogCard from "@/features/blogs/components/BlogCard";
 import BlogReadingProgress from "@/features/blogs/components/BlogReadingProgress";
 import BlogShareButtons from "@/features/blogs/components/BlogShareButtons";
 import { Skeleton } from "@/components/ui/skeleton";
-import Footer from "@/components/layout/Footer";
 
 // Helper to format date
 function formatDate(dateStr) {
@@ -290,7 +289,6 @@ export default function BlogDetailPage() {
             <Skeleton className="h-4 w-5/6" />
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -317,7 +315,6 @@ export default function BlogDetailPage() {
             </Link>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -531,8 +528,6 @@ export default function BlogDetailPage() {
         </div>
       </main>
 
-      {/* Global Footer */}
-      <Footer />
     </div>
   );
 }

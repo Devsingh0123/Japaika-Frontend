@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import Footer from "@/components/layout/Footer";
 import ReportPacksModal from "@/features/reports/components/ReportPacksModal";
 import { fetchMyReports } from "@/features/reports/reportsSlice";
 
@@ -258,7 +257,6 @@ export default function MyReportsPage() {
         onClose={() => setIsBuyModalOpen(false)}
       />
 
-      <Footer />
     </div>
   );
 }
