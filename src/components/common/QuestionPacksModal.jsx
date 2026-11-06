@@ -687,76 +687,78 @@ export default function QuestionPacksModal({
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleModalClose()}>
         <DialogContent
           showCloseButton={false}
-          className="sm:max-w-[880px] md:max-w-[900px] w-[95vw] p-0 overflow-hidden border border-border/80 bg-card/90 backdrop-blur-2xl text-foreground rounded-2xl sm:rounded-3xl shadow-2xl"
+          className="sm:max-w-[880px] md:max-w-[900px] w-[95vw] max-w-[95vw] max-h-[92vh] p-0 overflow-hidden border border-border/80 bg-card/90 backdrop-blur-2xl text-foreground rounded-2xl sm:rounded-3xl shadow-2xl flex flex-col"
         >
           {/* ================= STEP 1: PACKAGES POPUP ================= */}
           {step === 1 && (
-            <div className="flex flex-col">
-              <div className="pt-7 sm:pt-8 px-7 sm:px-9 pb-2 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                <div>
-                  <h2 className="font-serif text-2xl sm:text-[32px] font-normal text-foreground tracking-tight leading-tight">
-                    Buy more questions
-                  </h2>
-                  <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 font-sans leading-relaxed">
-                    One-time purchase · never expires · every answer stays chart-bound.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                  <div className="flex items-center gap-1 bg-accent/50 border border-border/80 rounded-full p-1 shadow-xs">
-                    {supportedCurrencies.map((curr) => {
-                      const isCurrActive = activeCurrency === curr
-                      const label = curr === "INR" ? "₹ INR" : "$ USD"
-                      return (
-                        <button
-                          key={curr}
-                          type="button"
-                          onClick={() => handleCurrencyChange(curr)}
-                          disabled={isLoadingPacks}
-                          className={`px-3 py-1 text-[11px] font-mono rounded-full transition cursor-pointer disabled:opacity-50 ${
-                            isCurrActive
-                              ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                              : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      )
-                    })}
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="pt-5 sm:pt-8 px-5 sm:px-9 pb-3 sm:pb-2 shrink-0 border-b border-border/40 sm:border-b-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="font-serif text-xl sm:text-[32px] font-normal text-foreground tracking-tight leading-tight">
+                      Buy more questions
+                    </h2>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1.5 font-sans leading-relaxed">
+                      One-time purchase · never expires · every answer stays chart-bound.
+                    </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleModalClose}
-                    className="w-9 h-9 rounded-full bg-accent/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition cursor-pointer shrink-0"
-                    aria-label="Close"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                    <div className="flex items-center gap-0.5 sm:gap-1 bg-accent/50 border border-border/80 rounded-full p-0.5 sm:p-1 shadow-xs">
+                      {supportedCurrencies.map((curr) => {
+                        const isCurrActive = activeCurrency === curr
+                        const label = curr === "INR" ? "₹ INR" : "$ USD"
+                        return (
+                          <button
+                            key={curr}
+                            type="button"
+                            onClick={() => handleCurrencyChange(curr)}
+                            disabled={isLoadingPacks}
+                            className={`px-2.5 sm:px-3 py-1 text-[10px] sm:text-[11px] font-mono rounded-full transition cursor-pointer disabled:opacity-50 ${
+                              isCurrActive
+                                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                                : "text-muted-foreground hover:text-foreground hover:bg-accent/60"
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        )
+                      })}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleModalClose}
+                      className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition cursor-pointer shrink-0"
+                      aria-label="Close"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="px-7 sm:px-9 py-6 sm:py-7">
+              <div className="flex-1 overflow-y-auto px-5 sm:px-9 py-4 sm:py-7 min-h-0 overscroll-contain">
                 {isLoadingPacks && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-5">
                     {[1, 2, 3].map((idx) => (
                       <div
                         key={idx}
-                        className="rounded-2xl p-6 sm:p-7 border border-border/80 bg-accent/20 flex flex-col justify-between min-h-[300px] sm:min-h-[320px]"
+                        className="rounded-2xl p-4 sm:p-7 border border-border/80 bg-accent/20 flex flex-col justify-between min-h-[170px] sm:min-h-[320px]"
                       >
                         <div>
                           <div className="flex items-center justify-between">
                             <Skeleton className="h-4 w-16" />
                             <Skeleton className="h-5 w-5 rounded-full" />
                           </div>
-                          <div className="mt-5 space-y-2">
-                            <Skeleton className="h-14 w-20" />
+                          <div className="mt-4 sm:mt-5 space-y-2">
+                            <Skeleton className="h-10 sm:h-14 w-20" />
                             <Skeleton className="h-4 w-24" />
                           </div>
                         </div>
                         <div>
-                          <div className="border-t border-border/60 my-5" />
-                          <Skeleton className="h-8 w-32" />
+                          <div className="border-t border-border/60 my-3 sm:my-5" />
+                          <Skeleton className="h-6 sm:h-8 w-32" />
                           <Skeleton className="h-4 w-24 mt-2" />
                         </div>
                       </div>
@@ -765,7 +767,7 @@ export default function QuestionPacksModal({
                 )}
 
                 {!isLoadingPacks && packsError && (
-                  <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-8 text-center flex flex-col items-center justify-center gap-3">
+                  <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-6 sm:p-8 text-center flex flex-col items-center justify-center gap-3">
                     <AlertCircle className="w-8 h-8 text-destructive" />
                     <h3 className="text-foreground font-medium text-base">Unable to load packages</h3>
                     <p className="text-muted-foreground text-xs sm:text-sm max-w-md">{packsError}</p>
@@ -782,7 +784,7 @@ export default function QuestionPacksModal({
                 )}
 
                 {!isLoadingPacks && !packsError && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-5">
                     {packs.map((pkg) => {
                       const isSelected = isPackMatch(pkg, selectedPack?.code || selectedPack?.id)
                       const badge = getBadgeForPack(pkg)
@@ -803,14 +805,14 @@ export default function QuestionPacksModal({
                         <div
                           key={pkg.id || pkg.code}
                           onClick={() => handleSelectPack(pkg)}
-                          className={`relative rounded-3xl p-6 sm:p-7 border cursor-pointer transition-all duration-200 flex flex-col justify-between min-h-[300px] sm:min-h-[320px] ${
+                          className={`relative rounded-2xl sm:rounded-3xl p-4 sm:p-7 border cursor-pointer transition-all duration-200 flex flex-col justify-between min-h-[170px] sm:min-h-[320px] ${
                             isSelected
                               ? "border-2 border-primary bg-primary/10 shadow-xl ring-1 ring-primary/40"
                               : "border-border/80 bg-accent/20 hover:border-border hover:bg-accent/40 shadow-xs"
                           }`}
                         >
                           {badge && (
-                            <span className="absolute -top-3 left-5 bg-amber-500 text-white dark:text-black font-bold text-[10px] font-mono uppercase tracking-wider px-2.5 py-0.5 rounded-full shadow-xs">
+                            <span className="absolute -top-2.5 left-4 sm:-top-3 sm:left-5 bg-amber-500 text-white dark:text-black font-bold text-[9px] sm:text-[10px] font-mono uppercase tracking-wider px-2 sm:px-2.5 py-0.5 rounded-full shadow-xs">
                               {badge}
                             </span>
                           )}
@@ -821,31 +823,31 @@ export default function QuestionPacksModal({
                                 {pkg.name || pkg.tier}
                               </span>
                               <div
-                                className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+                                className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border flex items-center justify-center transition-all ${
                                   isSelected
                                     ? "border-primary bg-primary text-primary-foreground"
                                     : "border-border/80 bg-transparent"
                                 }`}
                               >
-                                {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                                {isSelected && <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />}
                               </div>
                             </div>
 
-                            <div className="mt-4">
-                              <div className="font-serif text-[56px] sm:text-[62px] font-light text-foreground tracking-tight leading-none">
+                            <div className="mt-2.5 sm:mt-4 flex sm:block items-baseline gap-2 sm:gap-0">
+                              <div className="font-serif text-3xl sm:text-[56px] md:text-[62px] font-light text-foreground tracking-tight leading-none">
                                 {pkg.credits}
                               </div>
-                              <div className="text-xs sm:text-sm text-muted-foreground mt-1 font-sans">
+                              <div className="text-xs sm:text-sm text-muted-foreground sm:mt-1 font-sans">
                                 questions
                               </div>
                             </div>
                           </div>
 
                           <div>
-                            <div className="border-t border-border/60 my-5" />
+                            <div className="border-t border-border/60 my-3 sm:my-5" />
 
                             <div className="flex items-baseline gap-2">
-                              <span className="font-mono text-2xl sm:text-[26px] font-semibold text-foreground">
+                              <span className="font-mono text-xl sm:text-2xl md:text-[26px] font-semibold text-foreground">
                                 {formatCurrency(cardPricing.finalPrice, cardPricing.currency)}
                               </span>
                               {cardPricing.subtotal > cardPricing.finalPrice && (
@@ -855,7 +857,7 @@ export default function QuestionPacksModal({
                               )}
                             </div>
 
-                            <div className="text-xs text-muted-foreground mt-1 font-sans">
+                            <div className="text-xs text-muted-foreground mt-0.5 sm:mt-1 font-sans">
                               {cardPricing.currency === "INR"
                                 ? formatCurrency(Math.round(unitPriceNum), cardPricing.currency)
                                 : formatCurrency(unitPriceNum, cardPricing.currency)}{" "}
@@ -863,7 +865,7 @@ export default function QuestionPacksModal({
                             </div>
 
                             {primaryCoupon && (
-                              <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                              <div className="mt-2.5 sm:mt-4 flex flex-wrap items-center gap-1.5">
                                 <span
                                   className={`inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-wider px-2 py-0.5 rounded-md border ${
                                     isSelected
@@ -902,8 +904,8 @@ export default function QuestionPacksModal({
                 )}
               </div>
 
-              <div className="bg-card/70 px-7 sm:px-9 py-5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <span className="text-[11px] font-mono tracking-[0.2em] uppercase text-muted-foreground">
+              <div className="shrink-0 bg-card/95 backdrop-blur-md px-5 sm:px-9 py-3.5 sm:py-5 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                <span className="text-[10px] sm:text-[11px] font-mono tracking-[0.15em] sm:tracking-[0.2em] uppercase text-muted-foreground text-center sm:text-left">
                   SECURE PAYMENT · {selectedPricing.currency === "INR" ? "GST INVOICE" : "TAX INVOICE"} · INSTANT CREDIT
                 </span>
 
@@ -911,7 +913,7 @@ export default function QuestionPacksModal({
                   type="button"
                   disabled={!selectedPack || isLoadingPacks}
                   onClick={handleContinueToStep2}
-                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3.5 rounded-full font-medium shadow-md shadow-primary/20 hover:brightness-105 transition flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer disabled:opacity-50"
+                  className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-6 sm:px-8 py-3 sm:py-3.5 rounded-full font-medium shadow-md shadow-primary/20 hover:brightness-105 transition flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer disabled:opacity-50"
                 >
                   {selectedPack ? (
                     <>
@@ -930,22 +932,22 @@ export default function QuestionPacksModal({
 
           {/* ================= STEP 2: PAYMENT SUMMARY ================= */}
           {step === 2 && selectedPack && (
-            <div className="flex flex-col">
-              <div className="pt-7 sm:pt-8 px-7 sm:px-9 pb-4 flex items-center justify-between border-b border-border/60">
-                <div className="flex items-center gap-4">
+            <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="pt-5 sm:pt-8 px-5 sm:px-9 pb-3.5 sm:pb-4 flex items-center justify-between border-b border-border/60 shrink-0">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <button
                     type="button"
                     onClick={() => setStep(1)}
-                    className="w-9 h-9 rounded-full border border-border/80 bg-accent/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition cursor-pointer"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-border/80 bg-accent/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition cursor-pointer"
                     aria-label="Back to packages"
                   >
                     <ArrowLeft className="w-4 h-4" />
                   </button>
                   <div>
-                    <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground block leading-tight mb-0.5">
+                    <span className="text-[9px] sm:text-[10px] font-mono uppercase tracking-[0.2em] text-muted-foreground block leading-tight mb-0.5">
                       STEP 2 OF 2
                     </span>
-                    <h2 className="font-serif text-2xl sm:text-[28px] font-normal text-foreground">
+                    <h2 className="font-serif text-xl sm:text-[28px] font-normal text-foreground">
                       Payment summary
                     </h2>
                   </div>
@@ -954,14 +956,15 @@ export default function QuestionPacksModal({
                 <button
                   type="button"
                   onClick={handleModalClose}
-                  className="w-9 h-9 rounded-full bg-accent/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition cursor-pointer"
+                  className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-accent/60 hover:bg-accent flex items-center justify-center text-muted-foreground hover:text-foreground transition cursor-pointer"
                   aria-label="Close"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="px-7 sm:px-9 py-6 sm:py-7 grid grid-cols-1 md:grid-cols-12 gap-8">
+              <div className="flex-1 overflow-y-auto px-5 sm:px-9 py-5 sm:py-7 min-h-0 overscroll-contain">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8">
                 <div className="md:col-span-7 space-y-6">
                   {/* 1. YOUR PACK & QUICK SWITCH */}
                   <div>
@@ -1337,17 +1340,18 @@ export default function QuestionPacksModal({
                 </div>
               </div>
             </div>
+          </div>
           )}
         </DialogContent>
       </Dialog>
 
       {/* Dynamic Coupons List Modal */}
       <Dialog open={isCouponsModalOpen} onOpenChange={setIsCouponsModalOpen}>
-        <DialogContent className="sm:max-w-[460px] bg-card/90 border border-border/80 text-foreground p-6 rounded-3xl backdrop-blur-2xl shadow-2xl">
-          <div className="flex items-center justify-between pb-3 border-b border-border/60">
+        <DialogContent className="sm:max-w-[460px] w-[92vw] max-w-[92vw] bg-card/90 border border-border/80 text-foreground p-5 sm:p-6 rounded-2xl sm:rounded-3xl backdrop-blur-2xl shadow-2xl max-h-[85vh] flex flex-col">
+          <div className="flex items-center justify-between pb-3 border-b border-border/60 shrink-0">
             <div className="flex items-center gap-2">
               <Tag className="w-4 h-4 text-emerald-500" />
-              <h3 className="font-serif text-lg font-medium text-foreground">Available Coupons</h3>
+              <h3 className="font-serif text-base sm:text-lg font-medium text-foreground">Available Coupons</h3>
             </div>
             <button
               type="button"
@@ -1358,7 +1362,7 @@ export default function QuestionPacksModal({
             </button>
           </div>
 
-          <div className="space-y-3 py-3 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-3 py-3 overflow-y-auto flex-1 min-h-0 overscroll-contain">
             {questionPackCoupons.map((coupon) => {
               const applicable = parseApplicableProducts(coupon)
               const matchesSelected =
