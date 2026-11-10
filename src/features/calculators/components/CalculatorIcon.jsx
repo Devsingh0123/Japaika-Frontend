@@ -61,8 +61,8 @@ export const CALCULATOR_ICON_MAP = {
   "moon-sign-calculator": {
     icon: Moon,
     label: "Vedic Rashi",
-    accent: "text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/20",
-    gradient: "from-amber-500/20 to-amber-500/5",
+    accent: "text-sky-500 dark:text-sky-400 bg-sky-500/10 border-sky-500/20",
+    gradient: "from-sky-500/20 to-sky-500/5",
   },
   "kaal-sarp-dosha": {
     icon: InfinityIcon,

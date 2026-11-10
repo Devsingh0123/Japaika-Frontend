@@ -171,89 +171,90 @@
 }
 
 /* ==========================================================================
-   DARK MODE TOKENS (.dark) — OBSIDIAN & VEDIC GOLD
+   DARK MODE TOKENS (.dark) — OPTION 2: CELESTIAL MIDNIGHT & STARLIGHT CYAN
+   Spatial UI / VisionOS Refractive Glassmorphism & Night Sky Observatory
    ========================================================================== */
 .dark {
-  /* Cosmic Obsidian Canvas */
-  --color-background: #090a10;
-  --color-background-gradient-from: #090a10;
-  --color-background-gradient-via: #0d0f17;
-  --color-background-gradient-to: #07080c;
-  --color-foreground: #fcfbf9;
+  /* Abyssal Cosmic Midnight Canvas */
+  --color-background: #050811;
+  --color-background-gradient-from: #050811;
+  --color-background-gradient-via: #081022;
+  --color-background-gradient-to: #03050c;
+  --color-foreground: #f0f6ff;
 
-  /* Midnight Obsidian Surfaces & Elevated Cards */
-  --color-card: #121522;
-  --color-card-gradient-from: #141826f5;
-  --color-card-gradient-to: #0e101cf0;
-  --color-border: #23283a;
-  --color-muted: #161926;
-  --color-accent: #1c2032;
+  /* Frosted Starlight Glass Surfaces & Elevated Cards */
+  --color-card: #0d1527;
+  --color-card-gradient-from: rgba(13, 21, 39, 0.94);
+  --color-card-gradient-to: rgba(7, 12, 24, 0.90);
+  --color-border: #1e2c4a;
+  --color-muted: #0f182d;
+  --color-accent: #172646;
 
-  /* Vedic Gold Accents */
-  --color-primary: #d4af37;
-  --color-primary-foreground: #07080c;
+  /* Starlight Cyan / Constellation Accents */
+  --color-primary: #38bdf8;
+  --color-primary-foreground: #050811;
   --color-warning: #f59e0b;
   --color-danger: #f87171;
-  --color-link: #f3c465;
-  --color-focus-ring: #f59e0b;
+  --color-link: #7dd3fc;
+  --color-focus-ring: #38bdf8;
   --color-success: #34d399;
-  --nav-gradient-from: #090a10;
-  --nav-gradient-via: #0d0f17;
-  --nav-gradient-to: #07080c;
-  --button-gradient: linear-gradient(135deg, #f59e0b 0%, #d4af37 50%, #b8860b 100%);
+  --nav-gradient-from: #050811;
+  --nav-gradient-via: #081022;
+  --nav-gradient-to: #03050c;
+  --button-gradient: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0284c7 100%);
 
   /* Shadcn / Semantic Mappings (Dark) */
-  --background: #090a10;
-  --foreground: #fcfbf9;
-  --card: #121522;
-  --card-foreground: #fcfbf9;
-  --popover: #121522;
-  --popover-foreground: #fcfbf9;
-  --primary: #d4af37;
-  --primary-foreground: #07080c;
-  --secondary: #1a1d2c;
-  --secondary-foreground: #fcfbf9;
-  --muted: #161926;
-  --muted-foreground: #949bb0;
-  --accent: #1c2032;
-  --accent-foreground: #fde68a;
+  --background: #050811;
+  --foreground: #f0f6ff;
+  --card: #0d1527;
+  --card-foreground: #f0f6ff;
+  --popover: #0d1527;
+  --popover-foreground: #f0f6ff;
+  --primary: #38bdf8;
+  --primary-foreground: #050811;
+  --secondary: #131f38;
+  --secondary-foreground: #f0f6ff;
+  --muted: #0f182d;
+  --muted-foreground: #8b9bb4;
+  --accent: #172646;
+  --accent-foreground: #7dd3fc;
   --destructive: #f87171;
-  --destructive-foreground: #07080c;
-  --border: #23283a;
-  --input: #23283a;
-  --ring: rgba(212, 175, 55, 0.45);
-  --skeleton: #1a1d2c;
+  --destructive-foreground: #050811;
+  --border: #1e2c4a;
+  --input: #1e2c4a;
+  --ring: rgba(56, 189, 248, 0.45);
+  --skeleton: #131f38;
 
   /* Surfaces & Accents */
-  --mlh-bg: #090a10;
-  --mlh-sidebar: #07080c;
-  --mlh-surface: #121522;
-  --mlh-surface-hi: #1c2032;
-  --mlh-border: #23283a;
-  --mlh-border-hi: #343a4e;
+  --mlh-bg: #050811;
+  --mlh-sidebar: #03050c;
+  --mlh-surface: #0d1527;
+  --mlh-surface-hi: #172646;
+  --mlh-border: #1e2c4a;
+  --mlh-border-hi: #2b3d66;
 
-  /* Brand Vedic Gold Scale */
-  --mlh-plum-800: #78350f;
-  --mlh-plum: #d4af37;
-  --mlh-plum-500: #e5a93c;
-  --mlh-plum-400: #f3c465;
-  --mlh-plum-300: #fde68a;
-  --mlh-plum-100: #fef3c7;
+  /* Brand Starlight Scale */
+  --mlh-plum-800: #075985;
+  --mlh-plum: #38bdf8;
+  --mlh-plum-500: #7dd3fc;
+  --mlh-plum-400: #bae6fd;
+  --mlh-plum-300: #e0f2fe;
+  --mlh-plum-100: #f0f9ff;
 
-  --mlh-amber: #f59e0b;
-  --mlh-orrery: #e5a93c;
-  --mlh-orrery-hi: #f59e0b;
-  --mlh-iris: #e5a93c;
-  --mlh-iris-hi: #fde68a;
-  --mlh-iris-ink: #07080c;
+  --mlh-amber: #38bdf8;
+  --mlh-orrery: #38bdf8;
+  --mlh-orrery-hi: #7dd3fc;
+  --mlh-iris: #38bdf8;
+  --mlh-iris-hi: #7dd3fc;
+  --mlh-iris-ink: #050811;
   --mlh-success: #34d399;
   --mlh-danger: #f87171;
 
   /* Text Hierarchy */
   --mlh-text-hi: #ffffff;
-  --mlh-text: #fcfbf9;
-  --mlh-muted: #949bb0;
-  --mlh-faint: #646b82;
+  --mlh-text: #f0f6ff;
+  --mlh-muted: #8b9bb4;
+  --mlh-faint: #5a6a85;
 }
 
 /* Base DOM Defaults */
@@ -281,7 +282,10 @@
 
 .dark .bg-jagannatha-aura {
   background-color: var(--background);
-  background-image: radial-gradient(circle at 50% -10%, rgba(212, 175, 55, 0.12) 0%, rgba(180, 130, 20, 0.04) 45%, transparent 70%);
+  background-image: 
+    radial-gradient(circle at 50% -12%, rgba(56, 189, 248, 0.16) 0%, rgba(14, 116, 144, 0.22) 32%, transparent 68%),
+    radial-gradient(circle at 100% 40%, rgba(3, 105, 161, 0.22) 0%, transparent 50%),
+    radial-gradient(circle at 0% 80%, rgba(2, 44, 80, 0.25) 0%, transparent 50%);
 }
 
 /* Glassmorphism Styling matching https://jagannathahora.com/api-mcp */
@@ -294,9 +298,14 @@
 }
 
 .dark .glass-card {
-  background: rgba(18, 21, 34, 0.85);
-  border: 1px solid rgba(212, 175, 55, 0.12);
-  box-shadow: rgba(0, 0, 0, 0.65) 0px 18px 45px -5px, rgba(212, 175, 55, 0.06) 0px 0px 30px;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  background: rgba(13, 21, 39, 0.85);
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  box-shadow: 
+    rgba(0, 0, 0, 0.75) 0px 20px 50px -10px, 
+    rgba(56, 189, 248, 0.08) 0px 0px 35px, 
+    inset 0px 1px 0px 0px rgba(56, 189, 248, 0.15);
 }
 
 @media (max-width: 768px) {
@@ -304,7 +313,7 @@
     box-shadow: rgba(99, 102, 241, 0.1) 0px 6px 18px;
   }
   .dark .glass-card {
-    box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 20px -2px, rgba(212, 175, 55, 0.05) 0px 0px 15px;
+    box-shadow: rgba(0, 0, 0, 0.6) 0px 10px 24px -2px, rgba(56, 189, 248, 0.06) 0px 0px 20px;
   }
 }
 
@@ -319,12 +328,14 @@
 }
 
 .dark .mlh-card-glass {
-  background: color-mix(in srgb, var(--card) 92%, transparent);
-  border: 1px solid rgba(212, 175, 55, 0.12);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  border: 1px solid rgba(56, 189, 248, 0.16);
   box-shadow: 
-    0px 22px 60px 0px rgba(0, 0, 0, 0.65),
-    0px 0px 48px 0px rgba(212, 175, 55, 0.12),
-    inset 0px 1px 0px 0px rgba(255, 255, 255, 0.06);
+    0px 22px 60px 0px rgba(0, 0, 0, 0.75),
+    0px 0px 45px 0px rgba(56, 189, 248, 0.10),
+    inset 0px 1px 0px 0px rgba(56, 189, 248, 0.15);
 }
 
 .glow-plum {
@@ -339,6 +350,10 @@
   box-shadow: 0px 0px 20px 0px rgba(255, 112, 16, 0.35);
 }
 
+.dark .glow-amber {
+  box-shadow: 0px 0px 22px 0px rgba(56, 189, 248, 0.35);
+}
+
 .mlh-cta-plum {
   background: linear-gradient(160deg, #ff852e, #ff7010);
   box-shadow: 0px 0px 26px 0px rgba(255, 112, 16, 0.35);
@@ -347,6 +362,17 @@
 .mlh-cta-plum:hover {
   background: linear-gradient(160deg, #ff9547, #ea650a);
   box-shadow: 0px 0px 34px 0px rgba(255, 112, 16, 0.55);
+}
+
+.dark .mlh-cta-plum {
+  background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0284c7 100%);
+  color: #050811;
+  box-shadow: 0px 0px 26px 0px rgba(56, 189, 248, 0.35);
+}
+
+.dark .mlh-cta-plum:hover {
+  background: linear-gradient(135deg, #bae6fd 0%, #38bdf8 50%, #0369a1 100%);
+  box-shadow: 0px 0px 36px 0px rgba(56, 189, 248, 0.55);
 }
 
 /* Smooth Fade-Rise Micro-animation */
