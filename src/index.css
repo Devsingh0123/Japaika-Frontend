@@ -171,84 +171,89 @@
 }
 
 /* ==========================================================================
-   DARK MODE TOKENS (.dark)
-   Exact match to https://jagannathahora.com/api-mcp
+   DARK MODE TOKENS (.dark) — OBSIDIAN & VEDIC GOLD
    ========================================================================== */
 .dark {
-  /* Exact extracted variables from jagannathahora.com */
-  --color-background: #1f2937;
-  --color-background-gradient-from: #1f2937;
-  --color-background-gradient-via: #1f2937;
-  --color-background-gradient-to: #1f2937;
-  --color-foreground: #f9fafb;
-  --color-card: #1a1f2e;
-  --color-card-gradient-from: #1a1f2ef2;
-  --color-card-gradient-to: #1e293be6;
-  --color-border: #2d3748;
-  --color-muted: #6b7280;
-  --color-accent: #252b3b;
+  /* Cosmic Obsidian Canvas */
+  --color-background: #090a10;
+  --color-background-gradient-from: #090a10;
+  --color-background-gradient-via: #0d0f17;
+  --color-background-gradient-to: #07080c;
+  --color-foreground: #fcfbf9;
+
+  /* Midnight Obsidian Surfaces & Elevated Cards */
+  --color-card: #121522;
+  --color-card-gradient-from: #141826f5;
+  --color-card-gradient-to: #0e101cf0;
+  --color-border: #23283a;
+  --color-muted: #161926;
+  --color-accent: #1c2032;
+
+  /* Vedic Gold Accents */
+  --color-primary: #d4af37;
+  --color-primary-foreground: #07080c;
   --color-warning: #f59e0b;
   --color-danger: #f87171;
-  --color-link: #60a5fa;
-  --color-focus-ring: #93c5fd;
+  --color-link: #f3c465;
+  --color-focus-ring: #f59e0b;
   --color-success: #34d399;
-  --nav-gradient-from: #1f2937;
-  --nav-gradient-via: #111827;
-  --nav-gradient-to: #0f172a;
-  --button-gradient: #185abc;
+  --nav-gradient-from: #090a10;
+  --nav-gradient-via: #0d0f17;
+  --nav-gradient-to: #07080c;
+  --button-gradient: linear-gradient(135deg, #f59e0b 0%, #d4af37 50%, #b8860b 100%);
 
   /* Shadcn / Semantic Mappings (Dark) */
-  --background: #1f2937;
-  --foreground: #f9fafb;
-  --card: #1a1f2e;
-  --card-foreground: #f9fafb;
-  --popover: #1a1f2e;
-  --popover-foreground: #ffffff;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #252b3b;
-  --secondary-foreground: #f9fafb;
-  --muted: #252b3b;
-  --muted-foreground: #9ca3af;
-  --accent: #252b3b;
-  --accent-foreground: #f9fafb;
+  --background: #090a10;
+  --foreground: #fcfbf9;
+  --card: #121522;
+  --card-foreground: #fcfbf9;
+  --popover: #121522;
+  --popover-foreground: #fcfbf9;
+  --primary: #d4af37;
+  --primary-foreground: #07080c;
+  --secondary: #1a1d2c;
+  --secondary-foreground: #fcfbf9;
+  --muted: #161926;
+  --muted-foreground: #949bb0;
+  --accent: #1c2032;
+  --accent-foreground: #fde68a;
   --destructive: #f87171;
-  --destructive-foreground: #ffffff;
-  --border: #2d3748;
-  --input: #2d3748;
-  --ring: #2563eb;
-  --skeleton: #252b3b;
+  --destructive-foreground: #07080c;
+  --border: #23283a;
+  --input: #23283a;
+  --ring: rgba(212, 175, 55, 0.45);
+  --skeleton: #1a1d2c;
 
   /* Surfaces & Accents */
-  --mlh-bg: #1f2937;
-  --mlh-sidebar: #111827;
-  --mlh-surface: #1a1f2e;
-  --mlh-surface-hi: #252b3b;
-  --mlh-border: #2d3748;
-  --mlh-border-hi: #374151;
+  --mlh-bg: #090a10;
+  --mlh-sidebar: #07080c;
+  --mlh-surface: #121522;
+  --mlh-surface-hi: #1c2032;
+  --mlh-border: #23283a;
+  --mlh-border-hi: #343a4e;
 
-  /* Brand Accents */
-  --mlh-plum-800: #1e40af;
-  --mlh-plum: #3b82f6;
-  --mlh-plum-500: #60a5fa;
-  --mlh-plum-400: #93c5fd;
-  --mlh-plum-300: #bfdbfe;
-  --mlh-plum-100: #eff6ff;
+  /* Brand Vedic Gold Scale */
+  --mlh-plum-800: #78350f;
+  --mlh-plum: #d4af37;
+  --mlh-plum-500: #e5a93c;
+  --mlh-plum-400: #f3c465;
+  --mlh-plum-300: #fde68a;
+  --mlh-plum-100: #fef3c7;
 
   --mlh-amber: #f59e0b;
-  --mlh-orrery: #ff7010;
-  --mlh-orrery-hi: #ff9b52;
-  --mlh-iris: #60a5fa;
-  --mlh-iris-hi: #93c5fd;
-  --mlh-iris-ink: #0f172a;
+  --mlh-orrery: #e5a93c;
+  --mlh-orrery-hi: #f59e0b;
+  --mlh-iris: #e5a93c;
+  --mlh-iris-hi: #fde68a;
+  --mlh-iris-ink: #07080c;
   --mlh-success: #34d399;
   --mlh-danger: #f87171;
 
   /* Text Hierarchy */
   --mlh-text-hi: #ffffff;
-  --mlh-text: #f9fafb;
-  --mlh-muted: #9ca3af;
-  --mlh-faint: #6b7280;
+  --mlh-text: #fcfbf9;
+  --mlh-muted: #949bb0;
+  --mlh-faint: #646b82;
 }
 
 /* Base DOM Defaults */
@@ -276,7 +281,7 @@
 
 .dark .bg-jagannatha-aura {
   background-color: var(--background);
-  background-image: radial-gradient(circle at 50% -10%, rgba(37, 99, 235, 0.18) 0%, rgba(30, 58, 138, 0.06) 45%, transparent 70%);
+  background-image: radial-gradient(circle at 50% -10%, rgba(212, 175, 55, 0.12) 0%, rgba(180, 130, 20, 0.04) 45%, transparent 70%);
 }
 
 /* Glassmorphism Styling matching https://jagannathahora.com/api-mcp */
@@ -289,9 +294,9 @@
 }
 
 .dark .glass-card {
-  background: rgba(26, 31, 46, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: rgba(0, 0, 0, 0.45) 0px 16px 40px -5px, rgba(37, 99, 235, 0.08) 0px 0px 25px;
+  background: rgba(18, 21, 34, 0.85);
+  border: 1px solid rgba(212, 175, 55, 0.12);
+  box-shadow: rgba(0, 0, 0, 0.65) 0px 18px 45px -5px, rgba(212, 175, 55, 0.06) 0px 0px 30px;
 }
 
 @media (max-width: 768px) {
@@ -299,7 +304,7 @@
     box-shadow: rgba(99, 102, 241, 0.1) 0px 6px 18px;
   }
   .dark .glass-card {
-    box-shadow: rgba(0, 0, 0, 0.35) 0px 6px 16px -2px;
+    box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 20px -2px, rgba(212, 175, 55, 0.05) 0px 0px 15px;
   }
 }
 
@@ -315,11 +320,11 @@
 
 .dark .mlh-card-glass {
   background: color-mix(in srgb, var(--card) 92%, transparent);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.12);
   box-shadow: 
-    0px 22px 60px 0px rgba(0, 0, 0, 0.55),
-    0px 0px 48px 0px rgba(37, 99, 235, 0.22),
-    inset 0px 1px 0px 0px rgba(255, 255, 255, 0.08);
+    0px 22px 60px 0px rgba(0, 0, 0, 0.65),
+    0px 0px 48px 0px rgba(212, 175, 55, 0.12),
+    inset 0px 1px 0px 0px rgba(255, 255, 255, 0.06);
 }
 
 .glow-plum {

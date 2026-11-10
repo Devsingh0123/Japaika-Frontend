@@ -327,7 +327,7 @@ export default function Footer() {
                 </>
               ) : (
                 <>
-                  <Moon className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:-rotate-12 transition-transform duration-300" />
+                  <Moon className="w-4 h-4 text-amber-500 dark:text-amber-400 group-hover:-rotate-12 transition-transform duration-300" />
                   <span className="font-sans font-medium">Dark Mode</span>
                 </>
               )}
