@@ -168,13 +168,74 @@ export default function ReportDetailPage() {
     generationState.currentStage ||
     "Synthesizing foundational chapters and divisional analysis..."
 
+  const rawSections = activeFullReport?.sections
+  const sections = Array.isArray(rawSections)
+    ? rawSections
+    : typeof rawSections === "string"
+    ? (() => {
+        try {
+          const parsed = JSON.parse(rawSections)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
+        }
+      })()
+    : []
+
+  const rawToc = activeFullReport?.table_of_contents
+  const tableOfContents = Array.isArray(rawToc)
+    ? rawToc
+    : typeof rawToc === "string"
+    ? (() => {
+        try {
+          const parsed = JSON.parse(rawToc)
+          return Array.isArray(parsed) ? parsed : []
+        } catch {
+          return []
+        }
+      })()
+    : []
+
+  const rawSummary = activeFullReport?.summary
+  const summary =
+    rawSummary && typeof rawSummary === "object"
+      ? rawSummary
+      : typeof rawSummary === "string"
+      ? (() => {
+          try {
+            return JSON.parse(rawSummary)
+          } catch {
+            return null
+          }
+        })()
+      : null
+
+  const rawAstro = activeFullReport?.astrological_factors
+  const astroFactors =
+    rawAstro && typeof rawAstro === "object"
+      ? rawAstro
+      : typeof rawAstro === "string"
+      ? (() => {
+          try {
+            return JSON.parse(rawAstro)
+          } catch {
+            return null
+          }
+        })()
+      : null
+
+  const chartMeta = activeFullReport?.chart || {}
+  const lagnaSign = astroFactors?.ascendantSign || chartMeta.ascendant_sign || "Aries"
+  const rashiSign = astroFactors?.moonSign || chartMeta.moon_sign || "Taurus"
+  const suryaSign = astroFactors?.sunSign || chartMeta.sun_sign || "Leo"
+
   return (
     <div className="w-full flex-1 flex flex-col text-foreground">
       <div className="w-full max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-10">
         {/* Navigation Breadcrumb */}
         <Link
           to="/reports"
-          className="inline-flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          className="inline-flex items-center gap-2 text-xs font-mono text-muted-foreground hover:text-foreground transition-colors cursor-pointer print:hidden"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>All reports</span>
@@ -264,7 +325,7 @@ export default function ReportDetailPage() {
                   <span>Personalized Reading · Unlocked</span>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 print:hidden">
                   <Button
                     type="button"
                     variant="outline"
@@ -286,25 +347,33 @@ export default function ReportDetailPage() {
               </p>
 
               {/* Astrological Factors Bar */}
-              {activeFullReport.astrological_factors && (
-                <div className="pt-2 flex flex-wrap items-center gap-3 font-mono text-xs text-muted-foreground">
-                  <span className="text-muted-foreground uppercase tracking-widest text-[10px]">Chart Core:</span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-accent/70 border border-border text-foreground font-medium">
-                    Lagna: <strong>{activeFullReport.astrological_factors.ascendantSign}</strong>
+              <div className="pt-2 flex flex-wrap items-center gap-2 sm:gap-3 font-mono text-xs text-muted-foreground">
+                <span className="text-muted-foreground uppercase tracking-widest text-[10px]">Chart Core:</span>
+                <span className="px-2.5 py-1 rounded-full bg-accent/70 border border-border text-foreground font-medium">
+                  Lagna: <strong>{lagnaSign}</strong>
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-accent/70 border border-border text-foreground font-medium">
+                  Moon: <strong>{rashiSign}</strong>
+                </span>
+                <span className="px-2.5 py-1 rounded-full bg-accent/70 border border-border text-foreground font-medium">
+                  Sun: <strong>{suryaSign}</strong>
+                </span>
+                {chartMeta.nakshatra && (
+                  <span className="px-2.5 py-1 rounded-full bg-accent/70 border border-border text-foreground font-medium">
+                    Nakshatra: <strong>{chartMeta.nakshatra}</strong>
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-accent/70 border border-border text-foreground font-medium">
-                    Moon: <strong>{activeFullReport.astrological_factors.moonSign}</strong>
+                )}
+                {Array.isArray(astroFactors?.yogas) && astroFactors.yogas.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 font-medium">
+                    {astroFactors.yogas.length} Key Yogas Active
                   </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-accent/70 border border-border text-foreground font-medium">
-                    Sun: <strong>{activeFullReport.astrological_factors.sunSign}</strong>
-                  </span>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             {/* Executive Astrological Summary Box */}
-            {activeFullReport.summary && (
-              <div className="rounded-3xl border border-amber-500/30 bg-card/85 glass-card p-6 sm:p-8 space-y-6 shadow-lg">
+            {summary && (
+              <div className="rounded-3xl border border-amber-500/30 bg-card/85 glass-card p-6 sm:p-8 space-y-6 shadow-lg print:break-inside-avoid print:shadow-none print:bg-white print:border-gray-200">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-500">
                     <Sparkles className="w-4 h-4 text-amber-500" />
@@ -313,24 +382,28 @@ export default function ReportDetailPage() {
                     <h3 className="font-serif text-lg sm:text-xl font-bold text-foreground">
                       Executive Astrological Summary
                     </h3>
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold">
-                      Active Dasha: {activeFullReport.summary.activeDasha}
-                    </span>
+                    {summary.activeDasha && (
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold">
+                        Active Dasha: {summary.activeDasha}
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <p className="text-sm sm:text-base text-foreground/90 font-serif italic leading-relaxed border-l-2 border-amber-500 pl-4 py-0.5">
-                  "{activeFullReport.summary.leadObservation}"
-                </p>
+                {summary.leadObservation && (
+                  <p className="text-sm sm:text-base text-foreground/90 font-serif italic leading-relaxed border-l-2 border-amber-500 pl-4 py-0.5">
+                    "{summary.leadObservation}"
+                  </p>
+                )}
 
                 {/* Key Highlights */}
-                {Array.isArray(activeFullReport.summary.keyHighlights) && (
+                {Array.isArray(summary.keyHighlights) && summary.keyHighlights.length > 0 && (
                   <div className="space-y-2.5 pt-2">
                     <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground block font-medium">
                       Core Revelations:
                     </span>
                     <ul className="space-y-2 text-xs sm:text-sm text-foreground/85">
-                      {activeFullReport.summary.keyHighlights.map((hl, hIdx) => (
+                      {summary.keyHighlights.map((hl, hIdx) => (
                         <li key={hIdx} className="flex items-start gap-2.5">
                           <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                           <span>{hl}</span>
@@ -341,12 +414,12 @@ export default function ReportDetailPage() {
                 )}
 
                 {/* Primary Remedy Box */}
-                {activeFullReport.summary.primaryRemedy && (
+                {summary.primaryRemedy && (
                   <div className="rounded-2xl border border-border bg-accent/40 p-4 text-xs sm:text-sm text-foreground/90 flex items-start gap-3">
                     <Compass className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
                     <div>
                       <strong className="text-amber-600 dark:text-amber-400 block mb-0.5 font-semibold">Primary Karmic Remedy:</strong>
-                      <span>{activeFullReport.summary.primaryRemedy}</span>
+                      <span>{summary.primaryRemedy}</span>
                     </div>
                   </div>
                 )}
@@ -354,20 +427,20 @@ export default function ReportDetailPage() {
             )}
 
             {/* Table of Contents */}
-            {Array.isArray(activeFullReport.table_of_contents) && (
-              <div className="rounded-2xl border border-border bg-card/80 glass-card p-6 space-y-3">
+            {tableOfContents.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card/80 glass-card p-6 space-y-3 print:shadow-none print:bg-white print:border-gray-200 print:break-after-page">
                 <span className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground font-medium">
                   Reading Chapters
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
-                  {activeFullReport.table_of_contents.map((toc, tIdx) => (
+                  {tableOfContents.map((toc, tIdx) => (
                     <a
                       key={tIdx}
                       href={`#chapter-${toc.chapterNumber}`}
                       className="flex items-center gap-2 p-2 rounded-lg hover:bg-accent text-foreground/80 hover:text-foreground transition-colors"
                     >
                       <span className="font-mono text-amber-600 dark:text-amber-400 font-bold text-xs">
-                        0{toc.chapterNumber}
+                        {String(toc.chapterNumber).padStart(2, "0")}
                       </span>
                       <span className="truncate">{toc.title}</span>
                     </a>
@@ -377,18 +450,18 @@ export default function ReportDetailPage() {
             )}
 
             {/* Detailed Chapters / Sections */}
-            {Array.isArray(activeFullReport.sections) && (
-              <div className="space-y-12">
-                {activeFullReport.sections.map((section, sIdx) => (
+            {sections.length > 0 && (
+              <div className="space-y-12 print:space-y-8">
+                {sections.map((section, sIdx) => (
                   <section
                     key={sIdx}
                     id={`chapter-${section.chapterNumber}`}
-                    className="rounded-3xl border border-border bg-card/85 glass-card p-6 sm:p-10 space-y-6 scroll-mt-20 shadow-sm"
+                    className="rounded-3xl border border-border bg-card/85 glass-card p-6 sm:p-10 space-y-6 scroll-mt-20 shadow-sm print:break-before-page print:break-inside-auto print:shadow-none print:bg-white print:border-gray-200 print:p-6"
                   >
                     {/* Chapter Title & Astrometric Header */}
-                    <div className="space-y-2 border-b border-border pb-4">
+                    <div className="space-y-2 border-b border-border pb-4 print:break-after-avoid">
                       <div className="flex items-center justify-between text-xs font-mono text-amber-600 dark:text-amber-400 font-semibold">
-                        <span>CHAPTER 0{section.chapterNumber}</span>
+                        <span>CHAPTER {String(section.chapterNumber).padStart(2, "0")}</span>
                         {section.timingDates && (
                           <span className="text-muted-foreground flex items-center gap-1 font-normal">
                             <Clock className="w-3 h-3" />
@@ -417,7 +490,7 @@ export default function ReportDetailPage() {
 
                     {/* Practical Remedies */}
                     {Array.isArray(section.practicalRemedies) && section.practicalRemedies.length > 0 && (
-                      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-5 space-y-2">
+                      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 dark:bg-amber-500/15 p-5 space-y-2 print:break-inside-avoid print:bg-amber-500/10 print:border-amber-300">
                         <span className="text-xs font-mono uppercase tracking-wider text-amber-600 dark:text-amber-400 font-semibold block">
                           Recommended Actions & Upayas:
                         </span>
@@ -434,7 +507,7 @@ export default function ReportDetailPage() {
 
                     {/* Reflection Question */}
                     {section.reflectionQuestion && (
-                      <div className="rounded-2xl border border-border bg-accent/30 p-5 border-l-4 border-l-primary">
+                      <div className="rounded-2xl border border-border bg-accent/30 p-5 border-l-4 border-l-primary print:break-inside-avoid print:bg-gray-50 print:border-gray-200">
                         <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground block mb-1">
                           Introspective Contemplation:
                         </span>
@@ -445,7 +518,7 @@ export default function ReportDetailPage() {
                     )}
 
                     {/* Interactive "Ask Jyotish about this Chapter" CTA */}
-                    <div className="pt-2 flex justify-end">
+                    <div className="pt-2 flex justify-end print:hidden">
                       <Button
                         type="button"
                         variant="ghost"

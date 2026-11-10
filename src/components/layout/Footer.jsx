@@ -42,7 +42,7 @@ export default function Footer() {
   const dispatch = useDispatch()
 
   return (
-    <footer className="w-full border-t border-border bg-[url('/footer-bg.webp')] bg-[length:100%_auto] sm:bg-cover bg-bottom bg-no-repeat text-foreground mt-8 sm:mt-16 transition-colors">
+    <footer className="w-full border-t border-border bg-[url('/footer-bg.webp')] bg-[length:100%_auto] sm:bg-cover bg-bottom bg-no-repeat text-foreground mt-8 sm:mt-16 transition-colors print:hidden">
       <div className="w-full bg-gradient-to-b from-background/90 via-background/20 to-background/10 dark:from-background/95 dark:via-background/80 dark:to-background/92">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 lg:pt-12 pb-5 sm:pb-7 flex flex-col justify-between gap-6 sm:gap-8">
 

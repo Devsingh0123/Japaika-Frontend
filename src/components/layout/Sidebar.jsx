@@ -70,7 +70,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`h-screen sticky top-0 bg-card/85 backdrop-blur-2xl border-r border-border flex flex-col justify-between transition-all duration-300 z-40 shrink-0 ${isCollapsed ? "w-[72px]" : "w-[260px] lg:w-[280px]"
+      className={`h-screen sticky top-0 bg-card/85 backdrop-blur-2xl border-r border-border flex flex-col justify-between transition-all duration-300 z-40 shrink-0 print:hidden ${isCollapsed ? "w-[72px]" : "w-[260px] lg:w-[280px]"
         }`}
     >
       {/* Top Header & Navigation Rail */}

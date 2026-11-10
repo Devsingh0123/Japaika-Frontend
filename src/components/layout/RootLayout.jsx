@@ -131,11 +131,11 @@ export default function RootLayout() {
   }, [dispatch])
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-background text-foreground flex flex-col md:flex-row font-sans selection:bg-primary/30 selection:text-foreground transition-colors duration-200">
+    <div className="h-screen w-full overflow-hidden bg-background text-foreground flex flex-col md:flex-row font-sans selection:bg-primary/30 selection:text-foreground transition-colors duration-200 print:h-auto print:overflow-visible print:block">
       <ScrollRestoration />
 
       {/* Desktop Collapsible Left Sidebar */}
-      <div className="hidden md:flex shrink-0">
+      <div className="hidden md:flex shrink-0 print:hidden">
         <Sidebar
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
@@ -147,18 +147,20 @@ export default function RootLayout() {
       </div>
 
       {/* Main Viewport Container */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-jagannatha-aura relative transition-colors duration-200">
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden bg-jagannatha-aura relative transition-colors duration-200 print:h-auto print:overflow-visible print:block">
         {/* Mobile Top Header */}
-        <MobileHeader
-          onOpenBindModal={handleOpenAuth}
-          onOpenBirthDetailsModal={() => setIsBirthDetailsModalOpen(true)}
-          onOpenBuyQuestionsModal={() => handleOpenBuyModal()}
-          onOpenBuyReportsModal={() => handleOpenBuyReportsModal()}
-        />
+        <div className="print:hidden">
+          <MobileHeader
+            onOpenBindModal={handleOpenAuth}
+            onOpenBirthDetailsModal={() => setIsBirthDetailsModalOpen(true)}
+            onOpenBuyQuestionsModal={() => handleOpenBuyModal()}
+            onOpenBuyReportsModal={() => handleOpenBuyReportsModal()}
+          />
+        </div>
 
         {/* Dynamic Page Outlet with Centralized Sticky Footer */}
-        <main className="flex-1 flex flex-col min-h-0 relative overflow-y-auto">
-          <div className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col min-h-0 relative overflow-y-auto print:h-auto print:overflow-visible print:block">
+          <div className="flex-1 flex flex-col print:block">
             <Outlet
               context={{
                 onOpenBindModal: handleOpenAuth,
@@ -170,7 +172,11 @@ export default function RootLayout() {
               }}
             />
           </div>
-          {shouldShowFooter && <Footer />}
+          {shouldShowFooter && (
+            <div className="print:hidden">
+              <Footer />
+            </div>
+          )}
         </main>
       </div>
 

@@ -69,7 +69,7 @@ export default function MyReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0914] text-foreground flex flex-col justify-between">
+    <div className="min-h-screen bg-background text-foreground flex flex-col justify-between">
       <Helmet>
         <title>My Unlocked Reports | Japaika</title>
         <meta
@@ -80,17 +80,17 @@ export default function MyReportsPage() {
 
       <div className="w-full max-w-6xl mx-auto px-4 py-8 sm:py-12 space-y-8 flex-1">
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-white/10">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2 border-b border-border">
           <div className="space-y-2">
-            <div className="text-[11px] font-mono tracking-widest text-mlh-muted uppercase flex items-center gap-2">
+            <div className="text-[11px] font-mono tracking-widest text-muted-foreground uppercase flex items-center gap-2">
               <span>JAPAIKA / USER</span>
-              <span className="text-white/20">·</span>
-              <span className="text-mlh-plum-300">LIBRARY</span>
+              <span className="text-muted-foreground/40">·</span>
+              <span className="text-primary font-semibold">LIBRARY</span>
             </div>
-            <h1 className="text-3xl sm:text-4xl font-serif text-white tracking-tight">
+            <h1 className="text-3xl sm:text-4xl font-serif text-foreground tracking-tight">
               My Unlocked Reports
             </h1>
-            <p className="text-xs sm:text-sm text-mlh-muted max-w-xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-xl leading-relaxed">
               Your permanent library of personalized, 10-page executive astrological readings synthesized from your birth chart.
             </p>
           </div>
@@ -100,7 +100,7 @@ export default function MyReportsPage() {
               onClick={() => navigate("/reports")}
               variant="outline"
               size="sm"
-              className="border-white/15 bg-white/5 hover:bg-white/10 text-white text-xs font-mono rounded-xl cursor-pointer"
+              className="border-border bg-card hover:bg-accent text-foreground text-xs font-mono rounded-xl cursor-pointer shadow-xs"
             >
               <BookOpen className="w-3.5 h-3.5 mr-1.5" />
               <span>Browse Catalog</span>
@@ -109,7 +109,7 @@ export default function MyReportsPage() {
             <Button
               onClick={() => setIsBuyModalOpen(true)}
               size="sm"
-              className="bg-mlh-plum hover:bg-mlh-plum-400 text-white text-xs font-mono rounded-xl cursor-pointer flex items-center gap-1.5"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-mono rounded-xl cursor-pointer flex items-center gap-1.5 shadow-xs"
             >
               <Plus className="w-3.5 h-3.5" />
               <span>Buy Report Credits ({realReportCredits})</span>
@@ -120,8 +120,8 @@ export default function MyReportsPage() {
         {/* Loading State */}
         {loading && myReports.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-center space-y-3">
-            <Loader2 className="w-7 h-7 text-mlh-plum-400 animate-spin" />
-            <p className="text-xs font-mono text-mlh-muted">
+            <Loader2 className="w-7 h-7 text-primary animate-spin" />
+            <p className="text-xs font-mono text-muted-foreground">
               Loading your unlocked reports library...
             </p>
           </div>
@@ -130,17 +130,17 @@ export default function MyReportsPage() {
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="rounded-3xl border border-white/10 bg-gradient-to-br from-[#1b1220]/80 via-[#15121e]/80 to-[#0e0c14]/80 p-8 sm:p-12 text-center space-y-5 shadow-xl max-w-2xl mx-auto my-8"
+            className="rounded-3xl border border-border bg-card/85 glass-card p-8 sm:p-12 text-center space-y-5 shadow-xl max-w-2xl mx-auto my-8"
           >
-            <div className="w-16 h-16 rounded-2xl bg-mlh-plum-500/10 border border-mlh-plum-500/20 flex items-center justify-center text-mlh-plum-400 mx-auto">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mx-auto">
               <FileText className="w-8 h-8" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-serif text-white">
+              <h3 className="text-xl font-serif text-foreground">
                 Your Report Library is Empty
               </h3>
-              <p className="text-xs text-mlh-muted max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
                 You haven't unlocked any deep Vedic reports yet. Each report is a personalized 10-page master blueprint covering career, marriage, wealth, or personal growth.
               </p>
             </div>
@@ -148,7 +148,7 @@ export default function MyReportsPage() {
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Button
                 onClick={() => navigate("/reports")}
-                className="w-full sm:w-auto px-6 py-5 rounded-xl bg-mlh-plum hover:bg-mlh-plum-400 text-white text-xs font-semibold cursor-pointer shadow-lg flex items-center gap-2"
+                className="w-full sm:w-auto px-6 py-5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold cursor-pointer shadow-lg flex items-center gap-2"
               >
                 <span>Browse 8 Reports Catalog</span>
                 <ArrowRight className="w-4 h-4" />
@@ -169,7 +169,7 @@ export default function MyReportsPage() {
                   key={report.id || slug}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="rounded-3xl border border-white/10 bg-[#16121f]/90 backdrop-blur-xl p-5 sm:p-6 flex flex-col justify-between space-y-4 hover:border-mlh-plum-400/30 transition-all shadow-xl group"
+                  className="rounded-3xl border border-border bg-card/85 glass-card p-5 sm:p-6 flex flex-col justify-between space-y-4 hover:border-primary/50 transition-all shadow-sm group"
                 >
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
@@ -177,10 +177,10 @@ export default function MyReportsPage() {
                         variant="outline"
                         className={`text-[10px] font-mono uppercase tracking-wider rounded-full px-2.5 py-0.5 ${
                           isCompleted
-                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                            ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
                             : isGenerating
-                            ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
-                            : "border-rose-500/40 bg-rose-500/10 text-rose-300"
+                            ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-300"
+                            : "border-rose-500/40 bg-rose-500/10 text-rose-600 dark:text-rose-300"
                         }`}
                       >
                         {isCompleted
@@ -190,16 +190,16 @@ export default function MyReportsPage() {
                           : "Processing"}
                       </Badge>
 
-                      <span className="text-[11px] font-mono text-mlh-muted">
+                      <span className="text-[11px] font-mono text-muted-foreground">
                         {formatDate(report.created_at)}
                       </span>
                     </div>
 
                     <div className="space-y-1">
-                      <h3 className="text-base font-semibold text-white group-hover:text-amber-200 transition-colors">
+                      <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
                         {report.title}
                       </h3>
-                      <p className="text-xs text-mlh-muted line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                         {report.subtitle || "Comprehensive Vedic astrological reading synthesized from your birth chart."}
                       </p>
                     </div>
@@ -207,22 +207,22 @@ export default function MyReportsPage() {
                     {/* Progress Bar for Generating State */}
                     {isGenerating && (
                       <div className="space-y-1.5 pt-2">
-                        <div className="flex items-center justify-between text-[10px] font-mono text-amber-300">
+                        <div className="flex items-center justify-between text-[10px] font-mono text-amber-600 dark:text-amber-300">
                           <span>Synthesizing chapters...</span>
                           <span>{progress}%</span>
                         </div>
-                        <Progress value={progress} className="h-1.5 bg-white/10" />
+                        <Progress value={progress} className="h-1.5 bg-accent" />
                       </div>
                     )}
                   </div>
 
                   {/* Actions */}
-                  <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-border flex items-center justify-between gap-2">
                     {isCompleted ? (
                       <>
                         <Link
                           to={`/reports/${slug}`}
-                          className="flex-1 py-2 px-3 rounded-xl bg-mlh-plum hover:bg-mlh-plum-400 text-white text-xs font-semibold text-center transition-colors flex items-center justify-center gap-1.5"
+                          className="flex-1 py-2 px-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold text-center transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                         >
                           <BookOpen className="w-3.5 h-3.5" />
                           <span>Read Full Report</span>
@@ -232,13 +232,13 @@ export default function MyReportsPage() {
                           type="button"
                           onClick={() => window.open(`/reports/${slug}`, "_blank")}
                           title="Print or export PDF"
-                          className="p-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-colors cursor-pointer"
+                          className="p-2 rounded-xl border border-border bg-card hover:bg-accent text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                         >
                           <Printer className="w-4 h-4" />
                         </button>
                       </>
                     ) : (
-                      <div className="w-full py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-amber-300 text-xs font-mono text-center flex items-center justify-center gap-2">
+                      <div className="w-full py-2 px-3 rounded-xl bg-accent/50 border border-border text-amber-600 dark:text-amber-300 text-xs font-mono text-center flex items-center justify-center gap-2">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         <span>AI Synthesizing reading</span>
                       </div>

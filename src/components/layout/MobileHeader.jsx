@@ -69,7 +69,7 @@ export default function MobileHeader({
 
   return (
     <>
-      <header className="md:hidden sticky top-0 z-50 w-full h-14 bg-card/80 backdrop-blur-xl border-b border-border px-4 flex items-center justify-between transition-colors shadow-xs">
+      <header className="md:hidden sticky top-0 z-50 w-full h-14 bg-card/80 backdrop-blur-xl border-b border-border px-4 flex items-center justify-between transition-colors shadow-xs print:hidden">
         <Button
           variant="ghost"
           size="icon"

@@ -18,6 +18,29 @@ export {
   fetchReportById,
 };
 
+export const normalizeReport = (report) => {
+  if (!report) return report;
+  const parse = (val, fallback) => {
+    if (typeof val === "string") {
+      try {
+        const parsed = JSON.parse(val);
+        return parsed !== null && parsed !== undefined ? parsed : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+    return val !== null && val !== undefined ? val : fallback;
+  };
+
+  return {
+    ...report,
+    summary: parse(report.summary, {}),
+    table_of_contents: parse(report.table_of_contents, []),
+    sections: parse(report.sections, []),
+    astrological_factors: parse(report.astrological_factors, {}),
+  };
+};
+
 const initialState = {
   categories: REPORT_CATEGORIES,
   catalog: REPORTS_CATALOG,
@@ -88,14 +111,16 @@ export const reportsSlice = createSlice({
 
     // 2. My Reports
     builder.addCase(fetchMyReports.fulfilled, (state, action) => {
-      state.myReports = action.payload || [];
+      state.myReports = Array.isArray(action.payload)
+        ? action.payload.map(normalizeReport)
+        : [];
     });
 
     // 3. Check Slug Status
     builder.addCase(checkReportSlugStatus.fulfilled, (state, action) => {
       state.activeSlugStatus = action.payload;
       if (action.payload?.isUnlocked && action.payload?.report) {
-        state.activeFullReport = action.payload.report;
+        state.activeFullReport = normalizeReport(action.payload.report);
       }
       if (action.payload?.status === "generating" && action.payload?.reportId) {
         state.generationState.reportId = action.payload.reportId;
@@ -145,7 +170,7 @@ export const reportsSlice = createSlice({
 
     // 6. Get Full Report By ID
     builder.addCase(fetchReportById.fulfilled, (state, action) => {
-      state.activeFullReport = action.payload;
+      state.activeFullReport = normalizeReport(action.payload);
     });
   },
 });

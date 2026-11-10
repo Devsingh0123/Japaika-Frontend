@@ -382,3 +382,147 @@
 .mlh-thin-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 112, 16, 0.55);
 }
+
+/* ==========================================================================
+   PRINT / PDF MEDIA STYLES
+   Ensures multi-page documents (Vedic Reports) paginate cleanly without clipping
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 16mm 14mm 16mm 14mm;
+  }
+
+  /* 0. Color variable resets for print - ensure pure white paper and crisp dark text */
+  :root,
+  .dark,
+  html,
+  body {
+    --background: #ffffff !important;
+    --foreground: #111827 !important;
+    --card: #ffffff !important;
+    --card-foreground: #111827 !important;
+    --popover: #ffffff !important;
+    --popover-foreground: #111827 !important;
+    --muted: #f3f4f6 !important;
+    --muted-foreground: #4b5563 !important;
+    --accent: #f9fafb !important;
+    --accent-foreground: #111827 !important;
+    --border: #e5e7eb !important;
+    --color-background: #ffffff !important;
+    --color-foreground: #111827 !important;
+    --color-card: #ffffff !important;
+    --color-card-foreground: #111827 !important;
+    --color-border: #e5e7eb !important;
+    --color-muted: #f3f4f6 !important;
+    --color-muted-foreground: #4b5563 !important;
+    --color-accent: #f9fafb !important;
+  }
+
+  /* 1. Global root & body resets - eliminate height and overflow locks */
+  html,
+  body,
+  #root {
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 2. Unclamp RootLayout flex containers so browser can paginate */
+  #root > div,
+  #root > div > div,
+  main,
+  main > div {
+    display: block !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+    position: static !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    background-image: none !important;
+    color: #111827 !important;
+  }
+
+  /* 3. Hide non-printable application elements */
+  aside,
+  header,
+  footer,
+  nav,
+  [data-print-hide],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* 4. Force dark theme text to crisp black/dark gray on white paper */
+  .dark,
+  .dark body,
+  .dark #root {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+
+  .dark p,
+  .dark span,
+  .dark div,
+  .dark h1,
+  .dark h2,
+  .dark h3,
+  .dark h4,
+  .dark strong,
+  .dark li {
+    color: #111827 !important;
+  }
+
+  .dark .text-muted-foreground,
+  .text-muted-foreground {
+    color: #4b5563 !important;
+  }
+
+  /* 5. Clean, crisp cards for paper reading without blur or heavy dark shadows */
+  .glass-card,
+  .mlh-card-glass,
+  .dark .glass-card,
+  .dark .mlh-card-glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    color: #111827 !important;
+  }
+
+  /* 6. Neutralize glows and shadows */
+  .glow-plum,
+  .glow-amber,
+  .mlh-cta-plum {
+    box-shadow: none !important;
+  }
+
+  /* 7. Page break management */
+  .page-break-before {
+    break-before: page !important;
+    page-break-before: always !important;
+  }
+
+  .page-break-after {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  .page-break-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+}
