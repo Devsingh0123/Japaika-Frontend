@@ -52,7 +52,20 @@ export default function HomePage() {
             className="w-full flex flex-col"
           >
             {/* Hero Section with Cosmic Wheel & Input - Full viewport height */}
-            <div className="relative flex flex-col items-center justify-center px-4 sm:px-8 py-10 sm:py-16 w-full min-h-[calc(100dvh-3.5rem)] md:min-h-screen">
+            <div className="relative flex flex-col items-center justify-center px-4 sm:px-8 py-10 sm:py-16 w-full min-h-[calc(100dvh-3.5rem)] md:min-h-screen overflow-hidden">
+              {/* Ethereal Celestial Mandala Watermark behind Hero */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[52%] w-[380px] h-[380px] sm:w-[580px] sm:h-[580px] select-none z-0 flex items-center justify-center [mask-image:radial-gradient(circle_at_center,black_35%,transparent_75%)]"
+              >
+                {/* Breathing Ambient Aura Glow */}
+                <div className="absolute inset-0 rounded-full bg-amber-500/[0.04] dark:bg-primary/[0.08] blur-3xl animate-pulse" />
+                <img
+                  src="/japaikaLogo.svg"
+                  alt=""
+                  className="w-full h-full object-contain opacity-[0.12] dark:opacity-[0.07] mix-blend-multiply dark:mix-blend-normal filter dark:drop-shadow-[0_0_50px_rgba(56,189,248,0.25)]"
+                />
+              </div>
 
               {/* Hero Form & 4 Example Cards */}
               <HeroChatInput

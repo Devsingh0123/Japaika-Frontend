@@ -42,8 +42,26 @@ export default function Footer() {
   const dispatch = useDispatch()
 
   return (
-    <footer className="w-full border-t border-border bg-[url('/footer-bg.webp')] bg-[length:100%_auto] sm:bg-cover bg-bottom bg-no-repeat text-foreground mt-8 sm:mt-16 transition-colors print:hidden">
-      <div className="w-full bg-gradient-to-b from-background/90 via-background/20 to-background/10 dark:from-background/95 dark:via-background/80 dark:to-background/92">
+    <footer className="relative w-full border-t border-border/80 overflow-hidden bg-background text-foreground mt-8 sm:mt-16 transition-colors print:hidden">
+      {/* Ethereal Upward Starlight Ambient Glow */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground/[0.02] via-transparent to-transparent dark:from-primary/[0.045] dark:via-primary/[0.015]"
+      />
+
+      {/* Decorative Japaika Astrolabe Mandala Watermark */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-28 -right-20 sm:-bottom-36 sm:-right-16 w-[440px] h-[440px] sm:w-[660px] sm:h-[660px] opacity-[0.16] dark:opacity-[0.07] select-none z-0 [mask-image:radial-gradient(circle_at_center,black_35%,transparent_75%)]"
+      >
+        <img
+          src="/japaikaLogo.svg"
+          alt=""
+          className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal filter dark:brightness-115"
+        />
+      </div>
+
+      <div className="relative z-10 w-full">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 lg:pt-12 pb-5 sm:pb-7 flex flex-col justify-between gap-6 sm:gap-8">
 
           {/* ==============================================================

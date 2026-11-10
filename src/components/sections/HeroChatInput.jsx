@@ -235,6 +235,21 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
 
   return (
     <div className="shrink-0 w-full max-w-[780px] flex flex-col items-center justify-center relative z-10 mx-auto">
+      {/* Brand Emblem with Soft Theme-Aware Halo */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.35, ease: "easeOut" }}
+        className="relative mb-3.5 sm:mb-4 flex items-center justify-center select-none"
+      >
+        <div className="absolute -inset-2.5 rounded-full bg-amber-500/15 dark:bg-primary/25 blur-lg animate-pulse" />
+        <img
+          src="/japaikaLogo.svg"
+          alt=""
+          className="relative size-12 sm:size-14 object-contain drop-shadow-[0_0_16px_rgba(245,158,11,0.25)] dark:drop-shadow-[0_0_20px_rgba(56,189,248,0.4)]"
+        />
+      </motion.div>
+
       {/* Central Hero Heading */}
       <motion.h1
         initial={{ opacity: 0, y: 14 }}
