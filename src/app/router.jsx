@@ -1,28 +1,31 @@
+import { lazy } from "react"
 import { createBrowserRouter, Navigate, useLocation } from "react-router-dom"
 import RootLayout from "@/components/layout/RootLayout"
 import HomePage from "@/pages/HomePage"
-import HoroscopesListingPage from "@/pages/HoroscopesListingPage"
-import HoroscopeDetailPage from "@/pages/HoroscopeDetailPage"
-import CalculatorsListingPage from "@/pages/CalculatorsListingPage"
-import FreeKundliPage from "@/pages/FreeKundliPage"
-import KundliDisplayPage from "@/pages/KundliDisplayPage"
-import OnboardingPage from "@/pages/OnboardingPage"
-import ReportsListingPage from "@/pages/ReportsListingPage"
-import ReportDetailPage from "@/pages/ReportDetailPage"
-import InvoicesPage from "@/pages/InvoicesPage"
-import MyReportsPage from "@/pages/MyReportsPage"
-import BlogsListingPage from "@/pages/BlogsListingPage"
-import BlogDetailPage from "@/pages/BlogDetailPage"
 import ProtectedRoute from "@/components/common/ProtectedRoute"
-import CompatibilityPage from "@/pages/CompatibilityPage"
-import CalculatorRunnerPage from "@/pages/CalculatorRunnerPage"
-import ContactPage from "@/pages/ContactPage"
-import FaqPage from "@/pages/FaqPage"
-import LegalPage from "@/pages/LegalPage"
 import NotFoundPage from "@/pages/NotFoundPage"
-import ComingSoonPage from "@/pages/ComingSoonPage"
-import DoshasListingPage from "@/pages/DoshasListingPage"
-import DoshaDetailPage from "@/pages/DoshaDetailPage"
+
+// Lazy-loaded route components (downloaded on demand per route)
+const HoroscopesListingPage = lazy(() => import("@/pages/HoroscopesListingPage"))
+const HoroscopeDetailPage = lazy(() => import("@/pages/HoroscopeDetailPage"))
+const CalculatorsListingPage = lazy(() => import("@/pages/CalculatorsListingPage"))
+const FreeKundliPage = lazy(() => import("@/pages/FreeKundliPage"))
+const KundliDisplayPage = lazy(() => import("@/pages/KundliDisplayPage"))
+const OnboardingPage = lazy(() => import("@/pages/OnboardingPage"))
+const ReportsListingPage = lazy(() => import("@/pages/ReportsListingPage"))
+const ReportDetailPage = lazy(() => import("@/pages/ReportDetailPage"))
+const InvoicesPage = lazy(() => import("@/pages/InvoicesPage"))
+const MyReportsPage = lazy(() => import("@/pages/MyReportsPage"))
+const BlogsListingPage = lazy(() => import("@/pages/BlogsListingPage"))
+const BlogDetailPage = lazy(() => import("@/pages/BlogDetailPage"))
+const CompatibilityPage = lazy(() => import("@/pages/CompatibilityPage"))
+const CalculatorRunnerPage = lazy(() => import("@/pages/CalculatorRunnerPage"))
+const ContactPage = lazy(() => import("@/pages/ContactPage"))
+const FaqPage = lazy(() => import("@/pages/FaqPage"))
+const LegalPage = lazy(() => import("@/pages/LegalPage"))
+const ComingSoonPage = lazy(() => import("@/pages/ComingSoonPage"))
+const DoshasListingPage = lazy(() => import("@/pages/DoshasListingPage"))
+const DoshaDetailPage = lazy(() => import("@/pages/DoshaDetailPage"))
 
 function JyotishRedirect() {
   const location = useLocation()

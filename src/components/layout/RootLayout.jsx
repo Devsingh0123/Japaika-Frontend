@@ -1,24 +1,31 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, lazy, Suspense } from "react"
 import { Outlet, ScrollRestoration, useNavigate, useLocation } from "react-router-dom"
 import { useDispatch, useSelector } from "react-redux"
 import Sidebar from "@/components/layout/Sidebar"
 import MobileHeader from "@/components/layout/MobileHeader"
 import Footer from "@/components/layout/Footer"
-import AuthModal from "@/features/auth/AuthModal"
-import QuestionPacksModal from "@/components/common/QuestionPacksModal"
-import ReportPacksModal from "@/features/reports/components/ReportPacksModal"
-import MyBirthDetailsModal from "@/features/user/components/MyBirthDetailsModal"
+import PageFallback from "@/components/common/PageFallback"
 import { openAuthModal, closeAuthModal, fetchUserProfile, logout } from "@/features/auth/authSlice"
 import { getStoredAccessToken, AUTH_CHANNEL_NAME } from "@/lib/api-client"
 import { setUserContext } from "@/lib/analytics"
 
+// On-demand lazy-loaded heavy modals (deferred until user actually triggers them)
+const AuthModal = lazy(() => import("@/features/auth/AuthModal"))
+const QuestionPacksModal = lazy(() => import("@/components/common/QuestionPacksModal"))
+const ReportPacksModal = lazy(() => import("@/features/reports/components/ReportPacksModal"))
+const MyBirthDetailsModal = lazy(() => import("@/features/user/components/MyBirthDetailsModal"))
+
 export default function RootLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isBuyModalOpen, setIsBuyModalOpen] = useState(false)
+  const [hasOpenedBuyModal, setHasOpenedBuyModal] = useState(false)
   const [buyModalOptions, setBuyModalOptions] = useState(null)
   const [isBuyReportsModalOpen, setIsBuyReportsModalOpen] = useState(false)
+  const [hasOpenedBuyReportsModal, setHasOpenedBuyReportsModal] = useState(false)
   const [buyReportsModalOptions, setBuyReportsModalOptions] = useState(null)
   const [isBirthDetailsModalOpen, setIsBirthDetailsModalOpen] = useState(false)
+  const [hasOpenedBirthDetailsModal, setHasOpenedBirthDetailsModal] = useState(false)
+  const [hasOpenedAuthModal, setHasOpenedAuthModal] = useState(false)
   const pendingActionRef = useRef(null)
   const dispatch = useDispatch()
   const navigate = useNavigate()
@@ -32,14 +39,28 @@ export default function RootLayout() {
   const isExcludedRoute = location.pathname === "/onboarding"
   const shouldShowFooter = !isChatActive && !isExcludedRoute
 
+  // Track if auth modal was requested so its lazy chunk loads
+  useEffect(() => {
+    if (isAuthModalOpen) {
+      setHasOpenedAuthModal(true)
+    }
+  }, [isAuthModalOpen])
+
   const handleOpenBuyModal = (options) => {
     setBuyModalOptions(options || null)
+    setHasOpenedBuyModal(true)
     setIsBuyModalOpen(true)
   }
 
   const handleOpenBuyReportsModal = (options) => {
     setBuyReportsModalOptions(options || null)
+    setHasOpenedBuyReportsModal(true)
     setIsBuyReportsModalOpen(true)
+  }
+
+  const handleOpenBirthDetailsModal = () => {
+    setHasOpenedBirthDetailsModal(true)
+    setIsBirthDetailsModalOpen(true)
   }
 
   // App load: Fetch user profile (/auth/me) if access token exists in storage
@@ -148,7 +169,7 @@ export default function RootLayout() {
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           onOpenBindModal={handleOpenAuth}
-          onOpenBirthDetailsModal={() => setIsBirthDetailsModalOpen(true)}
+          onOpenBirthDetailsModal={handleOpenBirthDetailsModal}
           onOpenBuyQuestionsModal={() => handleOpenBuyModal()}
           onOpenBuyReportsModal={() => handleOpenBuyReportsModal()}
         />
@@ -160,7 +181,7 @@ export default function RootLayout() {
         <div className="print:hidden">
           <MobileHeader
             onOpenBindModal={handleOpenAuth}
-            onOpenBirthDetailsModal={() => setIsBirthDetailsModalOpen(true)}
+            onOpenBirthDetailsModal={handleOpenBirthDetailsModal}
             onOpenBuyQuestionsModal={() => handleOpenBuyModal()}
             onOpenBuyReportsModal={() => handleOpenBuyReportsModal()}
           />
@@ -169,16 +190,18 @@ export default function RootLayout() {
         {/* Dynamic Page Outlet with Centralized Sticky Footer */}
         <main className="flex-1 flex flex-col min-h-0 relative overflow-y-auto print:h-auto print:overflow-visible print:block">
           <div className="flex-1 flex flex-col print:block">
-            <Outlet
-              context={{
-                onOpenBindModal: handleOpenAuth,
-                onOpenAuthModal: handleOpenAuth,
-                onOpenBuyModal: handleOpenBuyModal,
-                onOpenBuyQuestionsModal: handleOpenBuyModal,
-                onOpenBuyReportsModal: handleOpenBuyReportsModal,
-                onOpenBirthDetailsModal: () => setIsBirthDetailsModalOpen(true),
-              }}
-            />
+            <Suspense fallback={<PageFallback />}>
+              <Outlet
+                context={{
+                  onOpenBindModal: handleOpenAuth,
+                  onOpenAuthModal: handleOpenAuth,
+                  onOpenBuyModal: handleOpenBuyModal,
+                  onOpenBuyQuestionsModal: handleOpenBuyModal,
+                  onOpenBuyReportsModal: handleOpenBuyReportsModal,
+                  onOpenBirthDetailsModal: handleOpenBirthDetailsModal,
+                }}
+              />
+            </Suspense>
           </div>
           {shouldShowFooter && (
             <div className="print:hidden">
@@ -189,42 +212,58 @@ export default function RootLayout() {
       </div>
 
       {/* Global Onboarding & Chart Binding Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => dispatch(closeAuthModal())}
-      />
+      {hasOpenedAuthModal && (
+        <Suspense fallback={null}>
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => dispatch(closeAuthModal())}
+          />
+        </Suspense>
+      )}
 
       {/* Global Question Packs 2-Step Purchase Modal (Razorpay) */}
-      <QuestionPacksModal
-        isOpen={isBuyModalOpen}
-        onClose={() => {
-          setIsBuyModalOpen(false)
-          setBuyModalOptions(null)
-        }}
-        onOpenAuth={handleOpenAuth}
-        initialPromoCode={buyModalOptions?.promoCode}
-        initialPackId={buyModalOptions?.packId}
-        currency={buyModalOptions?.currency || user?.currency || "INR"}
-      />
+      {hasOpenedBuyModal && (
+        <Suspense fallback={null}>
+          <QuestionPacksModal
+            isOpen={isBuyModalOpen}
+            onClose={() => {
+              setIsBuyModalOpen(false)
+              setBuyModalOptions(null)
+            }}
+            onOpenAuth={handleOpenAuth}
+            initialPromoCode={buyModalOptions?.promoCode}
+            initialPackId={buyModalOptions?.packId}
+            currency={buyModalOptions?.currency || user?.currency || "INR"}
+          />
+        </Suspense>
+      )}
 
       {/* Global Report Packs 2-Step Purchase Modal */}
-      <ReportPacksModal
-        isOpen={isBuyReportsModalOpen}
-        onClose={() => {
-          setIsBuyReportsModalOpen(false)
-          setBuyReportsModalOptions(null)
-        }}
-        onOpenAuth={handleOpenAuth}
-        initialPromoCode={buyReportsModalOptions?.promoCode}
-        initialPackId={buyReportsModalOptions?.packId}
-        currency={buyReportsModalOptions?.currency || user?.currency || "INR"}
-      />
+      {hasOpenedBuyReportsModal && (
+        <Suspense fallback={null}>
+          <ReportPacksModal
+            isOpen={isBuyReportsModalOpen}
+            onClose={() => {
+              setIsBuyReportsModalOpen(false)
+              setBuyReportsModalOptions(null)
+            }}
+            onOpenAuth={handleOpenAuth}
+            initialPromoCode={buyReportsModalOptions?.promoCode}
+            initialPackId={buyReportsModalOptions?.packId}
+            currency={buyReportsModalOptions?.currency || user?.currency || "INR"}
+          />
+        </Suspense>
+      )}
 
       {/* My Birth Details Edit Modal */}
-      <MyBirthDetailsModal
-        isOpen={isBirthDetailsModalOpen}
-        onClose={() => setIsBirthDetailsModalOpen(false)}
-      />
+      {hasOpenedBirthDetailsModal && (
+        <Suspense fallback={null}>
+          <MyBirthDetailsModal
+            isOpen={isBirthDetailsModalOpen}
+            onClose={() => setIsBirthDetailsModalOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }
