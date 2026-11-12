@@ -42,7 +42,7 @@ export default function Footer() {
   const dispatch = useDispatch()
 
   return (
-    <footer className="relative w-full border-t border-border/80 overflow-hidden bg-background text-foreground mt-8 sm:mt-16 transition-colors print:hidden">
+    <footer className="relative w-full border-t border-border/80 overflow-hidden text-foreground mt-8 sm:mt-16 transition-colors print:hidden">
       {/* Ethereal Upward Starlight Ambient Glow */}
       <div
         aria-hidden="true"
@@ -115,9 +115,9 @@ export default function Footer() {
               {/* Company links in horizontal row */}
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-foreground/90 font-medium">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Company:</span>
-                <Link to="/jobs" className="hover:text-primary transition-colors">Join Us</Link>
+                <Link to="/coming-soon" title="Coming Soon" className="hover:text-primary transition-colors">Become an Affiliate</Link>
                 <span className="text-border/80">•</span>
-                <Link to="/review" className="hover:text-primary transition-colors">Add Review</Link>
+                <Link to="/coming-soon" title="Coming Soon" className="hover:text-primary transition-colors">Add a Review</Link>
                 <span className="text-border/80">•</span>
                 <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
               </div>
@@ -233,12 +233,12 @@ export default function Footer() {
               </p>
               <ul className="space-y-2.5 text-xs font-medium text-foreground/85">
                 <li>
-                  <Link to="/jobs" className="hover:text-primary transition-colors">
-                    Join Us
+                  <Link to="/coming-soon" title="Coming Soon" className="hover:text-primary transition-colors">
+                    Become an Affiliate
                   </Link>
                 </li>
                 <li>
-                  <Link to="/review" className="hover:text-primary transition-colors">
+                  <Link to="/coming-soon" title="Coming Soon" className="hover:text-primary transition-colors">
                     Add a Review
                   </Link>
                 </li>
@@ -330,7 +330,7 @@ export default function Footer() {
           {/* Bottom Copyright & Theme Toggle */}
           <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-foreground font-medium">
             <div className="text-center sm:text-left font-mono px-3 py-1 rounded-full bg-card/80 border border-border/60 text-[11px] sm:text-xs">
-              © 2026 Japaika Technologies Private Limited
+              © 2026 Veltex Services Private Limited
             </div>
             <button
               type="button"
