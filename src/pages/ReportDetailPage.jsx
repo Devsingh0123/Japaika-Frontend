@@ -17,6 +17,7 @@ import {
   RefreshCw,
 } from "lucide-react"
 import { toast } from "sonner"
+import { trackEvent } from "@/lib/analytics"
 import { Button } from "@/components/ui/button"
 import ReportPacksModal from "@/features/reports/components/ReportPacksModal"
 import { REPORTS_CATALOG } from "@/features/reports/reportsData"
@@ -138,6 +139,15 @@ export default function ReportDetailPage() {
         toast.info("This report was already unlocked. Opening reading...")
         dispatch(fetchReportById(result.reportId))
       } else {
+        try {
+          trackEvent("report_unlocked", {
+            report_slug: report?.slug || slug,
+            report_title: report?.title,
+            category: report?.category,
+          })
+        } catch {
+          // Analytics non-blocking
+        }
         toast.success("1 report credit applied! Generating your deep reading...")
         if (typeof result?.creditsRemaining === "number") {
           dispatch(updateUserProfile({ reportCredits: result.creditsRemaining }))
@@ -329,7 +339,18 @@ export default function ReportDetailPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => window.print()}
+                    onClick={() => {
+                      try {
+                        trackEvent("report_pdf_downloaded", {
+                          report_slug: report?.slug || slug,
+                          report_title: report?.title,
+                          action_type: "print_pdf",
+                        })
+                      } catch {
+                        // Analytics non-blocking
+                      }
+                      window.print()
+                    }}
                     className="h-8 px-3 rounded-lg border border-border bg-card hover:bg-accent text-xs text-foreground flex items-center gap-1.5 cursor-pointer shadow-xs"
                   >
                     <Printer className="w-3.5 h-3.5" />

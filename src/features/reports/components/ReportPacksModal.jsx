@@ -33,6 +33,14 @@ import {
 import { openRazorpayCheckout } from "@/lib/razorpay"
 import { INDIAN_GST_STATES, SUPPORTED_CURRENCIES } from "@/lib/constants"
 import { formatCurrency, getPackPricing, normalizeCurrency } from "@/lib/utils"
+import {
+  trackViewItemList,
+  trackSelectItem,
+  trackViewItem,
+  trackBeginCheckout,
+  trackPurchase,
+  trackApplyPromoCode,
+} from "@/lib/analytics"
 
 function getApplicableProducts(coupon) {
   const raw = coupon?.applicable_products
@@ -146,6 +154,16 @@ export default function ReportPacksModal({
         setSupportedCurrencies(availableCurrencies.length > 0 ? availableCurrencies : SUPPORTED_CURRENCIES)
         setPacks(reportPacks)
         setCoupons(availableCoupons)
+
+        try {
+          trackViewItemList({
+            items: reportPacks,
+            itemListName: "Report Packs",
+            currency: backendCurrency,
+          })
+        } catch {
+          // Analytics non-blocking
+        }
 
         const defaultPack =
           reportPacks.find(
@@ -317,6 +335,18 @@ export default function ReportPacksModal({
     setSelectedPackId(packKey)
     setServerBreakdown(null)
 
+    try {
+      const pricing = getPackPricing(pkg, activeCurrency)
+      trackSelectItem({
+        item: pkg,
+        itemListName: "Report Packs",
+        currency: pricing?.currency || activeCurrency,
+        value: pricing?.offerPrice ?? pricing?.originalPrice ?? 0,
+      })
+    } catch {
+      // Analytics non-blocking
+    }
+
     const packCoupons = getCouponsForPack(pkg)
     const isCurrentStillValid = packCoupons.some(
       (c) => c.code?.toUpperCase() === appliedPromo?.toUpperCase()
@@ -324,6 +354,20 @@ export default function ReportPacksModal({
     if (!isCurrentStillValid) {
       setAppliedPromo(pkg.defaultPromoCode || packCoupons[0]?.code || "")
     }
+  }
+
+  const handleContinueToStep2 = () => {
+    if (!selectedPack) return
+    try {
+      trackViewItem({
+        item: selectedPack,
+        currency: selectedPricing.currency,
+        value: finalPrice,
+      })
+    } catch {
+      // Analytics non-blocking
+    }
+    setStep(2)
   }
 
   const handleApplyPromo = async (codeToApply) => {
@@ -334,6 +378,16 @@ export default function ReportPacksModal({
     if (matchedCoupon) {
       if (!doesCouponMatchPack(matchedCoupon, selectedPack)) {
         toast.error(`Coupon "${code}" is not valid for ${selectedPack.name} Pack.`)
+        try {
+          trackApplyPromoCode({
+            couponCode: code,
+            discountAmount: 0,
+            packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+            status: "error",
+          })
+        } catch {
+          // Analytics non-blocking
+        }
         return
       }
 
@@ -343,6 +397,23 @@ export default function ReportPacksModal({
       setIsCouponsModalOpen(false)
       setPromoInput("")
       toast.success(`Coupon code ${code} applied successfully!`)
+
+      const couponPricing = computePackWithCouponPricing(
+        selectedPack,
+        matchedCoupon,
+        activeCurrency
+      )
+
+      try {
+        trackApplyPromoCode({
+          couponCode: code,
+          discountAmount: couponPricing.discountAmount || 0,
+          packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+          status: "success",
+        })
+      } catch {
+        // Analytics non-blocking
+      }
 
       if (isAuthenticated && selectedPack) {
         try {
@@ -380,13 +451,43 @@ export default function ReportPacksModal({
         setIsCouponsModalOpen(false)
         setPromoInput("")
         toast.success(`Special coupon "${code}" applied successfully!`)
+        try {
+          trackApplyPromoCode({
+            couponCode: code,
+            discountAmount: breakdownRes.data.discountAmount || 0,
+            packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+            status: "success",
+          })
+        } catch {
+          // Analytics non-blocking
+        }
       } else {
         toast.error(`Invalid or expired coupon code "${code}".`)
+        try {
+          trackApplyPromoCode({
+            couponCode: code,
+            discountAmount: 0,
+            packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+            status: "error",
+          })
+        } catch {
+          // Analytics non-blocking
+        }
       }
     } catch (err) {
       toast.error(
         err?.response?.data?.message || `Invalid or expired coupon code "${code}".`
       )
+      try {
+        trackApplyPromoCode({
+          couponCode: code,
+          discountAmount: 0,
+          packId: selectedPack.code || selectedPack.id || selectedPack.packDbId,
+          status: "error",
+        })
+      } catch {
+        // Analytics non-blocking
+      }
     }
   }
 
@@ -422,8 +523,8 @@ export default function ReportPacksModal({
       const orderData = orderRes?.data || orderRes
       const backendKeyId = orderData?.keyId
       const backendOrderId = orderData?.orderId
-      const amountSubunits = orderData?.amountSubunits
-      const finalAmount = orderData?.amount ?? finalPrice
+      const amountSubunits = orderData?.breakdown?.amountSubunits || orderData?.amountSubunits || orderData?.amount
+      const finalAmount = orderData?.breakdown?.totalAmount ?? finalPrice
       const orderCurrency = orderData?.currency || selectedPricing.currency
 
       if (!backendKeyId) {
@@ -434,6 +535,22 @@ export default function ReportPacksModal({
         document.activeElement.blur()
       }
       handleModalClose()
+
+      const effectivePromoCode =
+        isPromoApplicable && appliedPromo
+          ? appliedPromo.trim().toUpperCase()
+          : undefined
+
+      try {
+        trackBeginCheckout({
+          item: selectedPack,
+          currency: orderCurrency,
+          value: finalAmount,
+          coupon: effectivePromoCode,
+        })
+      } catch {
+        // Analytics non-blocking
+      }
 
       setTimeout(() => {
         openRazorpayCheckout({
@@ -457,6 +574,26 @@ export default function ReportPacksModal({
                 razorpay_signature: paymentResponse.razorpay_signature,
                 method: "standard",
               })
+
+              try {
+                trackPurchase({
+                  transactionId: paymentResponse.razorpay_payment_id || backendOrderId,
+                  value: finalAmount,
+                  currency: orderCurrency,
+                  coupon: effectivePromoCode,
+                  items: [
+                    {
+                      id: selectedPack.id || selectedPack.code,
+                      name: selectedPack.name,
+                      category: "Astrology Report Pack",
+                      price: finalAmount,
+                      quantity: 1,
+                    },
+                  ],
+                })
+              } catch {
+                // Analytics non-blocking
+              }
 
               const creditsRemaining =
                 verifyRes?.data?.reportCreditsRemaining ??
@@ -738,7 +875,7 @@ export default function ReportPacksModal({
                 <Button
                   type="button"
                   disabled={!selectedPack || isLoadingPacks}
-                  onClick={() => setStep(2)}
+                  onClick={handleContinueToStep2}
                   className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-3.5 rounded-full font-medium shadow-md transition flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer disabled:opacity-50"
                 >
                   {selectedPack ? (

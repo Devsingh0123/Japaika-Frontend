@@ -3,21 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <script>
-      (function() {
-        var t = localStorage.getItem('theme') || 'dark';
-        if (t === 'dark') document.documentElement.classList.add('dark');
-        else document.documentElement.classList.remove('dark');
+      (function () {
+        var t = localStorage.getItem("theme") || "dark";
+        if (t === "dark") document.documentElement.classList.add("dark");
+        else document.documentElement.classList.remove("dark");
       })();
     </script>
+
     <link rel="icon" type="image/svg+xml" href="/japaikaLogo.svg" />
     <link rel="apple-touch-icon" href="/japaikaLogo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Japaika — AI Vedic Astrology & Kundli</title>
     <!-- Razorpay Standard Checkout SDK -->
     <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Google Tag Manager -->
+    <script
+      async
+      src="https://www.googletagmanager.com/gtm.js?id=GTM-PC3QWV84"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+    </script>
+    <!-- End Google Tag Manager -->
   </head>
   <body>
-    <div id="root"> </div>
+    <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

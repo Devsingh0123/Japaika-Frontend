@@ -20,6 +20,7 @@ import VedicDatePicker from "@/components/common/VedicDatePicker"
 import VedicTimePicker from "@/components/common/VedicTimePicker"
 import { toast } from "sonner"
 import { apiClient } from "@/lib/api-client"
+import { trackEvent } from "@/lib/analytics"
 import {
   submitOnboarding,
   setOnboardingStep,
@@ -179,6 +180,15 @@ export default function OnboardingPage() {
     const result = await dispatch(submitOnboarding(payload))
 
     if (!result.error) {
+      try {
+        trackEvent("birth_chart_bound", {
+          birth_city: selectedLocation?.city,
+          gender: payload.gender,
+          chart_generated: true,
+        })
+      } catch {
+        // Analytics non-blocking
+      }
       navigate("/", { replace: true })
     }
   }

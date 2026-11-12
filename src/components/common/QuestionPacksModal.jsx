@@ -33,6 +33,14 @@ import {
 import { openRazorpayCheckout } from "@/lib/razorpay"
 import { INDIAN_GST_STATES, SUPPORTED_CURRENCIES } from "@/lib/constants"
 import { formatCurrency, getPackPricing, normalizeCurrency } from "@/lib/utils"
+import {
+  trackViewItemList,
+  trackSelectItem,
+  trackViewItem,
+  trackBeginCheckout,
+  trackPurchase,
+  trackApplyPromoCode,
+} from "@/lib/analytics"
 
 function parseApplicableProducts(coupon) {
   const raw = coupon?.applicable_products
@@ -272,6 +280,16 @@ export default function QuestionPacksModal({
         setPacks(questionPacks)
         setCoupons(availableCoupons)
 
+        try {
+          trackViewItemList({
+            items: questionPacks,
+            itemListName: "Question Packs",
+            currency: backendCurrency,
+          })
+        } catch {
+          // Analytics non-blocking
+        }
+
         const defaultPack =
           findPack(initialPackId, questionPacks) ||
           questionPacks.find((p) => p.tier === "gold" || p.code?.includes("gold")) ||
@@ -452,6 +470,18 @@ export default function QuestionPacksModal({
     setPromoRemovedManually(false)
     setIsPromoInputVisible(false)
 
+    try {
+      const pricing = getPackPricing(pkg, activeCurrency)
+      trackSelectItem({
+        item: pkg,
+        itemListName: "Question Packs",
+        currency: pricing?.currency || activeCurrency,
+        value: pricing?.offerPrice ?? pricing?.originalPrice ?? 0,
+      })
+    } catch {
+      // Analytics non-blocking
+    }
+
     const relatedCoupon = getPrimaryCouponForPack(pkg, questionPackCoupons)
     if (relatedCoupon) {
       setAppliedPromo(relatedCoupon.code)
@@ -470,6 +500,17 @@ export default function QuestionPacksModal({
         setAppliedPromo(primary.code)
       }
     }
+
+    try {
+      trackViewItem({
+        item: selectedPack,
+        currency: selectedPricing.currency,
+        value: finalPrice,
+      })
+    } catch {
+      // Analytics non-blocking
+    }
+
     setStep(2)
   }
 
@@ -487,6 +528,16 @@ export default function QuestionPacksModal({
     if (matchedCoupon) {
       if (!doesCouponMatchPack(matchedCoupon, packToValidate)) {
         toast.error(`Coupon "${code}" is not valid for ${packToValidate.name} Pack.`)
+        try {
+          trackApplyPromoCode({
+            couponCode: code,
+            discountAmount: 0,
+            packId: packToValidate.id || packToValidate.code,
+            status: "error",
+          })
+        } catch {
+          // Analytics non-blocking
+        }
         return
       }
 
@@ -497,6 +548,23 @@ export default function QuestionPacksModal({
       setIsCouponsModalOpen(false)
       setPromoInput("")
       toast.success(`Coupon code ${code} applied to ${packToValidate.name} Pack!`)
+
+      const couponPricing = computePackWithCouponPricing(
+        packToValidate,
+        matchedCoupon,
+        activeCurrency
+      )
+
+      try {
+        trackApplyPromoCode({
+          couponCode: code,
+          discountAmount: couponPricing.discountAmount || 0,
+          packId: packToValidate.id || packToValidate.code,
+          status: "success",
+        })
+      } catch {
+        // Analytics non-blocking
+      }
 
       if (isAuthenticated) {
         try {
@@ -535,13 +603,43 @@ export default function QuestionPacksModal({
         setIsCouponsModalOpen(false)
         setPromoInput("")
         toast.success(`Special coupon "${code}" applied to ${packToValidate.name} Pack!`)
+        try {
+          trackApplyPromoCode({
+            couponCode: code,
+            discountAmount: breakdownRes.data.discountAmount || 0,
+            packId: packToValidate.id || packToValidate.code,
+            status: "success",
+          })
+        } catch {
+          // Analytics non-blocking
+        }
       } else {
         toast.error(`Invalid or expired coupon code "${code}".`)
+        try {
+          trackApplyPromoCode({
+            couponCode: code,
+            discountAmount: 0,
+            packId: packToValidate.id || packToValidate.code,
+            status: "error",
+          })
+        } catch {
+          // Analytics non-blocking
+        }
       }
     } catch (err) {
       toast.error(
         err?.response?.data?.message || `Invalid or expired coupon code "${code}".`
       )
+      try {
+        trackApplyPromoCode({
+          couponCode: code,
+          discountAmount: 0,
+          packId: packToValidate.id || packToValidate.code,
+          status: "error",
+        })
+      } catch {
+        // Analytics non-blocking
+      }
     }
   }
 
@@ -593,8 +691,8 @@ export default function QuestionPacksModal({
       const orderData = orderRes?.data || orderRes
       const backendKeyId = orderData?.keyId
       const backendOrderId = orderData?.orderId
-      const amountSubunits = orderData?.amountSubunits
-      const finalAmount = orderData?.amount ?? finalPrice
+      const amountSubunits = orderData?.breakdown?.amountSubunits || orderData?.amountSubunits || orderData?.amount
+      const finalAmount = orderData?.breakdown?.totalAmount ?? finalPrice
       const orderCurrency = orderData?.currency || selectedPricing.currency
 
       if (!backendKeyId) {
@@ -605,6 +703,24 @@ export default function QuestionPacksModal({
         document.activeElement.blur()
       }
       handleModalClose()
+
+      const effectivePromoCode =
+        isPromoApplicable && appliedPromo
+          ? appliedPromo.trim().toUpperCase()
+          : undefined
+
+      try {
+        trackBeginCheckout({
+          item: selectedPack,
+          currency: orderCurrency,
+          value: finalAmount,
+          coupon: effectivePromoCode,
+        })
+      } catch(error) {
+   console.error("Error tracking begin checkout:", error)     
+
+        // Analytics non-blocking
+      }
 
       setTimeout(() => {
         openRazorpayCheckout({
@@ -628,6 +744,26 @@ export default function QuestionPacksModal({
                 razorpay_signature: paymentResponse.razorpay_signature,
                 method: "standard",
               })
+
+              try {
+                trackPurchase({
+                  transactionId: paymentResponse.razorpay_payment_id || backendOrderId,
+                  value: finalAmount,
+                  currency: orderCurrency,
+                  coupon: effectivePromoCode,
+                  items: [
+                    {
+                      id: selectedPack.id || selectedPack.code,
+                      name: selectedPack.name,
+                      category: "Astrology Question Pack",
+                      price: finalAmount,
+                      quantity: 1,
+                    },
+                  ],
+                })
+              } catch(error) {console.error("Error tracking purchase:", error)        
+                // Analytics non-blocking
+              }
 
               const creditsRemaining = verifyRes?.data?.creditsRemaining
               if (typeof creditsRemaining === "number") {

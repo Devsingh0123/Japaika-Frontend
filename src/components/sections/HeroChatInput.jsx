@@ -8,6 +8,7 @@ import { openAuthModal } from "@/features/auth/authSlice"
 import { startGenerating, setThinkingStep, stopGenerating, addConversation } from "@/features/jyotish/jyotishSlice"
 import { streamChatTurn } from "@/features/jyotish/jyotishApi"
 import { toast } from "sonner"
+import { trackEvent } from "@/lib/analytics"
 
 // Maximum words allowed in the query composer
 const MAX_WORDS = 250
@@ -134,9 +135,20 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
     }
   }
 
-  const executeQuestion = (textToSend) => {
+  const executeQuestion = (textToSend, isPromptChip = false) => {
     const text = (textToSend || query).trim()
     if (!text || isGenerating) return
+
+    try {
+      trackEvent("astrology_query_submitted", {
+        engine,
+        is_prompt_chip: Boolean(isPromptChip),
+        word_count: countWords(text),
+        has_birth_chart: Boolean(birthDetails?.chartId),
+      })
+    } catch {
+      // Analytics non-blocking
+    }
 
     // JYOTISH: Chart-bound personalized reading requires authentication & question quota
     if (engine === "jyotish") {
@@ -190,6 +202,16 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
       },
       onDone: (data) => {
         if (data?.reading) {
+          try {
+            trackEvent("astrology_reading_completed", {
+              engine,
+              reading_id: data.reading.id,
+              tools_consulted_count: data.reading.thinkingSteps?.length || 0,
+            })
+          } catch {
+            // Analytics non-blocking
+          }
+
           dispatch(
             addConversation({
               ...data.reading,
@@ -224,7 +246,7 @@ export default function HeroChatInput({ onOpenBindModal, onOpenBuyModal }) {
 
   const handlePromptClick = (question) => {
     setQuery(question)
-    executeQuestion(question)
+    executeQuestion(question, true)
   }
 
   const activePrompts = engine === "shastra" ? SHASTRA_PROMPTS : JYOTISH_PROMPTS

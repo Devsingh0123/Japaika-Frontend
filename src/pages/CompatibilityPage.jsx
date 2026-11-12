@@ -11,6 +11,7 @@ import ManglikDoshaCard from "@/features/compatibility/components/ManglikDoshaCa
 import NadiBhakootAlert from "@/features/compatibility/components/NadiBhakootAlert";
 import AskJyotishMarriageCTA from "@/features/compatibility/components/AskJyotishMarriageCTA";
 import { calculateMarriageMatch } from "@/features/compatibility";
+import { trackEvent } from "@/lib/analytics";
 
 export default function CompatibilityPage() {
   const dispatch = useDispatch();
@@ -26,6 +27,15 @@ export default function CompatibilityPage() {
       calculateMarriageMatch({ boy, girl })
     );
     if (calculateMarriageMatch.fulfilled.match(resultAction)) {
+      try {
+        trackEvent("compatibility_checked", {
+          total_points: resultAction.payload?.totalPoints ?? resultAction.payload?.total_points ?? resultAction.payload?.score,
+          maximum_points: 36,
+          is_recommended: Boolean(resultAction.payload?.isRecommended ?? resultAction.payload?.is_recommended),
+        });
+      } catch {
+        // Analytics non-blocking
+      }
       setShowForm(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }

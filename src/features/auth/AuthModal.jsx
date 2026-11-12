@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import VedicDatePicker from "@/components/common/VedicDatePicker"
 import VedicTimePicker from "@/components/common/VedicTimePicker"
 import { toast } from "sonner"
+import { trackEvent, setUserContext } from "@/lib/analytics"
 import {
   closeAuthModal,
   setEmail as setStoreEmail,
@@ -106,6 +107,11 @@ export default function AuthModal({ isOpen: propsIsOpen, onClose: propsOnClose }
     dispatch(setStoreEmail(trimmedEmail))
     const result = await dispatch(sendOtp({ email: trimmedEmail }))
     if (!result.error) {
+      try {
+        trackEvent("otp_requested", { method: "email" })
+      } catch {
+        // Analytics non-blocking
+      }
       setResendTimer(cooldownSeconds || 38)
       setOtpDigits(["", "", "", "", "", ""])
       setTimeout(() => {
@@ -167,6 +173,18 @@ export default function AuthModal({ isOpen: propsIsOpen, onClose: propsOnClose }
     if (!result.error) {
       const verifiedUser = result.payload?.user
       const isComplete = Boolean(verifiedUser?.onboardingCompleted)
+      const isNewUser = Boolean(result.payload?.isNewUser || result.payload?.is_new_user)
+
+      try {
+        if (isNewUser) {
+          trackEvent("sign_up", { method: "email_otp", user_id: verifiedUser?.id })
+        } else {
+          trackEvent("login", { method: "email_otp", user_id: verifiedUser?.id })
+        }
+        setUserContext(verifiedUser)
+      } catch {
+        // Analytics non-blocking
+      }
 
       if (propsOnClose) propsOnClose(false)
       dispatch(closeAuthModal())

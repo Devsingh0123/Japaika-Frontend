@@ -11,6 +11,7 @@ import {
 } from "../jyotishSlice"
 import { streamChatTurn, submitMessageFeedback } from "../jyotishApi"
 import { toast } from "sonner"
+import { trackEvent } from "@/lib/analytics"
 
 // Formats seconds into MM:SS left
 function formatCountdown(secs) {
@@ -223,6 +224,17 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
     setInFlightQuery(text)
     setFollowUpQuery("")
 
+    try {
+      trackEvent("astrology_query_submitted", {
+        engine: currentEngine,
+        is_follow_up: true,
+        word_count: text.split(/\s+/).length,
+        has_birth_chart: Boolean(birthDetails?.chartId),
+      })
+    } catch {
+      // Analytics non-blocking
+    }
+
     const initialStep =
       currentEngine === "jyotish"
         ? "Reviewing your core birth profile and selecting chart tools..."
@@ -248,6 +260,16 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
       onDone: (data) => {
         setInFlightQuery("")
         if (data?.reading) {
+          try {
+            trackEvent("astrology_reading_completed", {
+              engine: currentEngine,
+              reading_id: data.reading.id,
+              tools_consulted_count: data.reading.thinkingSteps?.length || 0,
+            })
+          } catch {
+            // Analytics non-blocking
+          }
+
           dispatch(
             addConversation({
               ...data.reading,
@@ -281,6 +303,14 @@ export default function JyotishChatConversation({ onOpenBuyModal }) {
 
   const handleFeedback = (readingId, feedbackType) => {
     if (readingId) {
+      try {
+        trackEvent("astrology_feedback_submitted", {
+          reading_id: readingId,
+          feedback_type: feedbackType,
+        })
+      } catch {
+        // Analytics non-blocking
+      }
       dispatch(updateConversationFeedback({ id: readingId, feedback: feedbackType }))
       dispatch(submitMessageFeedback({ messageId: readingId, feedback: feedbackType }))
     }

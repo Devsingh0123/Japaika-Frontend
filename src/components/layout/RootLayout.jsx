@@ -10,6 +10,7 @@ import ReportPacksModal from "@/features/reports/components/ReportPacksModal"
 import MyBirthDetailsModal from "@/features/user/components/MyBirthDetailsModal"
 import { openAuthModal, closeAuthModal, fetchUserProfile, logout } from "@/features/auth/authSlice"
 import { getStoredAccessToken, AUTH_CHANNEL_NAME } from "@/lib/api-client"
+import { setUserContext } from "@/lib/analytics"
 
 export default function RootLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -48,6 +49,13 @@ export default function RootLayout() {
       dispatch(fetchUserProfile())
     }
   }, [dispatch])
+
+  // GA4 session stitching: sync user identity when authenticated profile is loaded
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      setUserContext(user)
+    }
+  }, [isAuthenticated, user?.id])
 
   // Force onboarding route if user is authenticated but onboarding is incomplete
   useEffect(() => {
