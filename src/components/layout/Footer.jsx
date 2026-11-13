@@ -117,7 +117,7 @@ export default function Footer() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Company:</span>
                 <Link to="/coming-soon" title="Coming Soon" className="hover:text-primary transition-colors">Become an Affiliate</Link>
                 <span className="text-border/80">•</span>
-                <Link to="/coming-soon" title="Coming Soon" className="hover:text-primary transition-colors">Add a Review</Link>
+                <Link to="/review" className="hover:text-primary transition-colors">Add a Review</Link>
                 <span className="text-border/80">•</span>
                 <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
               </div>
@@ -238,7 +238,7 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/coming-soon" title="Coming Soon" className="hover:text-primary transition-colors">
+                  <Link to="/review" className="hover:text-primary transition-colors">
                     Add a Review
                   </Link>
                 </li>

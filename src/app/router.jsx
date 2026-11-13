@@ -21,6 +21,7 @@ const BlogDetailPage = lazy(() => import("@/pages/BlogDetailPage"))
 const CompatibilityPage = lazy(() => import("@/pages/CompatibilityPage"))
 const CalculatorRunnerPage = lazy(() => import("@/pages/CalculatorRunnerPage"))
 const ContactPage = lazy(() => import("@/pages/ContactPage"))
+const ReviewPage = lazy(() => import("@/pages/ReviewPage"))
 const FaqPage = lazy(() => import("@/pages/FaqPage"))
 const LegalPage = lazy(() => import("@/pages/LegalPage"))
 const ComingSoonPage = lazy(() => import("@/pages/ComingSoonPage"))
@@ -194,6 +195,14 @@ export const router = createBrowserRouter([
       {
         path: "contact-us",
         element: <ContactPage />,
+      },
+      {
+        path: "review",
+        element: <ReviewPage />,
+      },
+      {
+        path: "reviews",
+        element: <ReviewPage />,
       },
       {
         path: "faq",

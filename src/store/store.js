@@ -8,6 +8,7 @@ import blogsReducer from "@/features/blogs/blogsSlice";
 import compatibilityReducer from "@/features/compatibility/compatibilitySlice";
 import supportReducer from "@/features/support/supportSlice";
 import doshasReducer from "@/features/doshas/doshasSlice";
+import reviewsReducer from "@/features/reviews/reviewsSlice";
 
 /**
  * Japaika Independent Global Redux Store Configuration
@@ -33,6 +34,7 @@ export const store = configureStore({
     compatibility: compatibilityReducer,
     support: supportReducer,
     doshas: doshasReducer,
+    reviews: reviewsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
